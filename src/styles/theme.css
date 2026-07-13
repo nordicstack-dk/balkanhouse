@@ -1,0 +1,30 @@
+@theme {
+  --color-burgundy: #6b1d2a;
+  --color-burgundy-dark: #4a1220;
+  --color-cream: #f7f0e6;
+  --color-cream-dark: #e8dcc8;
+  --color-wood: #8b5e3c;
+  --color-wood-light: #c4a882;
+  --color-forest: #2d4a3e;
+  --color-gold: #c9a227;
+  --color-text: #2c1810;
+  --color-text-muted: #5c4a42;
+  --color-success: #2d6a4f;
+  --color-warning: #b8860b;
+  --color-danger: #9b2335;
+
+  --font-sans: 'Source Sans 3', system-ui, sans-serif;
+}
+
+:root {
+  --bh-burgundy: #6b1d2a;
+  --bh-burgundy-dark: #4a1220;
+  --bh-cream: #f7f0e6;
+  --bh-cream-dark: #e8dcc8;
+  --bh-wood: #8b5e3c;
+  --bh-wood-light: #c4a882;
+  --bh-forest: #2d4a3e;
+  --bh-gold: #c9a227;
+  --bh-text: #2c1810;
+  --bh-text-muted: #5c4a42;
+}

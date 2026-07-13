@@ -1,0 +1,95 @@
+{
+  "meta": {
+    "title": "Balkan House — Romanian products in Denmark",
+    "description": "Online shop with traditional Romanian products."
+  },
+  "nav": {
+    "shop": "Shop",
+    "about": "About us",
+    "faq": "FAQ",
+    "contact": "Contact",
+    "cart": "Cart"
+  },
+  "home": {
+    "heroTitle": "Taste of home in Denmark",
+    "heroSubtitle": "Authentic Romanian products delivered with care.",
+    "shopNow": "Browse shop",
+    "promotionsTitle": "Special offers",
+    "categoriesTitle": "Popular categories",
+    "viewAll": "View all products"
+  },
+  "shop": {
+    "title": "Shop",
+    "allCategories": "All categories",
+    "searchPlaceholder": "Search products...",
+    "search": "Search",
+    "noProducts": "No products found.",
+    "resultsFor": "Results for „{query}\""
+  },
+  "product": {
+    "addToCart": "Add to cart",
+    "outOfStock": "Unavailable",
+    "ingredients": "Ingredients",
+    "allergens": "Allergens",
+    "description": "Description",
+    "unit": "Unit",
+    "origin": "Country of origin",
+    "promo": "-{percent}%"
+  },
+  "stock": {
+    "in": "In stock",
+    "low": "Low stock",
+    "out": "Out of stock"
+  },
+  "unit": {
+    "piece": "piece",
+    "kg": "kg"
+  },
+  "cart": {
+    "title": "Your cart",
+    "empty": "Your cart is empty.",
+    "continueShopping": "Continue shopping",
+    "quantity": "Quantity",
+    "remove": "Remove",
+    "subtotal": "Subtotal",
+    "submitOrder": "Submit order",
+    "items": "{count, plural, one {# item} other {# items}}"
+  },
+  "checkout": {
+    "title": "Checkout",
+    "stubTitle": "Your order has been registered",
+    "stubMessage": "You will receive a payment link after confirmation. (Phase 3 — coming soon)",
+    "backToShop": "Back to shop"
+  },
+  "about": {
+    "title": "About us",
+    "content": "Balkan House brings the taste of home to Denmark."
+  },
+  "faq": {
+    "title": "FAQ",
+    "q1": "How does ordering work?",
+    "a1": "Add products and click „Submit order\".",
+    "q2": "What currency?",
+    "a2": "All prices are in Danish kroner (DKK).",
+    "q3": "Do you deliver across Denmark?",
+    "a3": "Yes, we deliver across Denmark."
+  },
+  "contact": {
+    "title": "Contact",
+    "intro": "Reach us by email or phone.",
+    "email": "Email",
+    "phone": "Phone",
+    "emailValue": "contact@balkanhouse.dk",
+    "phoneValue": "+45 00 00 00 00"
+  },
+  "footer": {
+    "tagline": "Authentic Romanian products in Denmark",
+    "support": "Customer support",
+    "links": "Useful links"
+  },
+  "common": {
+    "currency": "DKK",
+    "loading": "Loading...",
+    "error": "An error occurred."
+  }
+}

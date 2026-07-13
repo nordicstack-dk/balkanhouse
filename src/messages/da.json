@@ -1,0 +1,95 @@
+{
+  "meta": {
+    "title": "Balkan House — Rumænske produkter i Danmark",
+    "description": "Online butik med traditionelle rumænske produkter."
+  },
+  "nav": {
+    "shop": "Butik",
+    "about": "Om os",
+    "faq": "FAQ",
+    "contact": "Kontakt",
+    "cart": "Kurv"
+  },
+  "home": {
+    "heroTitle": "Smag af hjemmet i Danmark",
+    "heroSubtitle": "Autentiske rumænske produkter leveret med omhu.",
+    "shopNow": "Se butikken",
+    "promotionsTitle": "Tilbud",
+    "categoriesTitle": "Populære kategorier",
+    "viewAll": "Se alle produkter"
+  },
+  "shop": {
+    "title": "Butik",
+    "allCategories": "Alle kategorier",
+    "searchPlaceholder": "Søg produkter...",
+    "search": "Søg",
+    "noProducts": "Ingen produkter fundet.",
+    "resultsFor": "Resultater for „{query}\""
+  },
+  "product": {
+    "addToCart": "Tilføj til kurv",
+    "outOfStock": "Udsolgt",
+    "ingredients": "Ingredienser",
+    "allergens": "Allergener",
+    "description": "Beskrivelse",
+    "unit": "Enhed",
+    "origin": "Oprindelsesland",
+    "promo": "-{percent}%"
+  },
+  "stock": {
+    "in": "På lager",
+    "low": "Lavt lager",
+    "out": "Udsolgt"
+  },
+  "unit": {
+    "piece": "stk",
+    "kg": "kg"
+  },
+  "cart": {
+    "title": "Din kurv",
+    "empty": "Kurven er tom.",
+    "continueShopping": "Fortsæt med at handle",
+    "quantity": "Antal",
+    "remove": "Fjern",
+    "subtotal": "Subtotal",
+    "submitOrder": "Send ordre",
+    "items": "{count, plural, one {# vare} other {# varer}}"
+  },
+  "checkout": {
+    "title": "Checkout",
+    "stubTitle": "Din ordre er registreret",
+    "stubMessage": "Du modtager et betalingslink efter bekræftelse. (Fase 3 — kommer snart)",
+    "backToShop": "Tilbage til butikken"
+  },
+  "about": {
+    "title": "Om os",
+    "content": "Balkan House bringer smagen af hjemmet til Danmark."
+  },
+  "faq": {
+    "title": "FAQ",
+    "q1": "Hvordan fungerer bestilling?",
+    "a1": "Tilføj produkter og tryk „Send ordre\".",
+    "q2": "Hvilken valuta?",
+    "a2": "Alle priser er i danske kroner (DKK).",
+    "q3": "Leverer I i hele Danmark?",
+    "a3": "Ja, vi leverer i hele Danmark."
+  },
+  "contact": {
+    "title": "Kontakt",
+    "intro": "Kontakt os via email eller telefon.",
+    "email": "Email",
+    "phone": "Telefon",
+    "emailValue": "contact@balkanhouse.dk",
+    "phoneValue": "+45 00 00 00 00"
+  },
+  "footer": {
+    "tagline": "Autentiske rumænske produkter i Danmark",
+    "support": "Kundesupport",
+    "links": "Nyttige links"
+  },
+  "common": {
+    "currency": "DKK",
+    "loading": "Indlæser...",
+    "error": "Der opstod en fejl."
+  }
+}

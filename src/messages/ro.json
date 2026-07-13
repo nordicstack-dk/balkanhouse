@@ -1,0 +1,95 @@
+{
+  "meta": {
+    "title": "Balkan House — Produse românești în Danemarca",
+    "description": "Magazin online cu produse tradiționale românești. Comandă acum, plătești mai târziu."
+  },
+  "nav": {
+    "shop": "Magazin",
+    "about": "Despre noi",
+    "faq": "Întrebări frecvente",
+    "contact": "Contact",
+    "cart": "Coș"
+  },
+  "home": {
+    "heroTitle": "Gust de acasă, la tine în Danemarca",
+    "heroSubtitle": "Produse românești autentice — conserve, dulciuri, mezeluri și multe altele, livrate cu grijă.",
+    "shopNow": "Vezi magazinul",
+    "promotionsTitle": "Oferte speciale",
+    "categoriesTitle": "Categorii populare",
+    "viewAll": "Vezi toate produsele"
+  },
+  "shop": {
+    "title": "Magazin",
+    "allCategories": "Toate categoriile",
+    "searchPlaceholder": "Caută produse...",
+    "search": "Caută",
+    "noProducts": "Nu am găsit produse.",
+    "resultsFor": "Rezultate pentru „{query}\""
+  },
+  "product": {
+    "addToCart": "Adaugă în coș",
+    "outOfStock": "Indisponibil",
+    "ingredients": "Ingrediente",
+    "allergens": "Alergeni",
+    "description": "Descriere",
+    "unit": "Unitate",
+    "origin": "Țara de origine",
+    "promo": "-{percent}%"
+  },
+  "stock": {
+    "in": "În stoc",
+    "low": "Stoc redus",
+    "out": "Epuizat"
+  },
+  "unit": {
+    "piece": "bucată",
+    "kg": "kg"
+  },
+  "cart": {
+    "title": "Coșul tău",
+    "empty": "Coșul este gol.",
+    "continueShopping": "Continuă cumpărăturile",
+    "quantity": "Cantitate",
+    "remove": "Elimină",
+    "subtotal": "Subtotal",
+    "submitOrder": "Trimite comanda",
+    "items": "{count, plural, =0 {0 produse} one {# produs} few {# produse} other {# produse}}"
+  },
+  "checkout": {
+    "title": "Finalizare comandă",
+    "stubTitle": "Comanda ta a fost înregistrată",
+    "stubMessage": "Îți vom trimite un link de plată după confirmarea comenzii. (Faza 3 — în curând)",
+    "backToShop": "Înapoi la magazin"
+  },
+  "about": {
+    "title": "Despre noi",
+    "content": "Balkan House aduce gustul de acasă în Danemarca. Suntem o familie pasionată de produse românești autentice, selectate cu grijă de la producători de încredere. Conținutul acestei pagini poate fi editat din panoul de administrare."
+  },
+  "faq": {
+    "title": "Întrebări frecvente",
+    "q1": "Cum funcționează comanda?",
+    "a1": "Adaugi produse în coș și apeși „Trimite comanda\". Vei primi confirmarea și link-ul de plată după ce verificăm disponibilitatea.",
+    "q2": "În ce monedă sunt prețurile?",
+    "a2": "Toate prețurile sunt afișate în coroane daneze (DKK).",
+    "q3": "Livrați în toată Danemarca?",
+    "a3": "Da, livrăm în toată Danemarca. Detaliile de livrare vor fi comunicate la confirmarea comenzii."
+  },
+  "contact": {
+    "title": "Contact",
+    "intro": "Suntem bucuroși să te ajutăm. Contactează-ne prin email sau telefon.",
+    "email": "Email",
+    "phone": "Telefon",
+    "emailValue": "contact@balkanhouse.dk",
+    "phoneValue": "+45 00 00 00 00"
+  },
+  "footer": {
+    "tagline": "Produse românești autentice în Danemarca",
+    "support": "Suport clienți",
+    "links": "Linkuri utile"
+  },
+  "common": {
+    "currency": "DKK",
+    "loading": "Se încarcă...",
+    "error": "A apărut o eroare."
+  }
+}
