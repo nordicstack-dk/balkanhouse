@@ -46,12 +46,9 @@ export default buildConfig({
     mcpPlugin({}),
     vercelBlobStorage({
       enabled: Boolean(process.env.BLOB_READ_WRITE_TOKEN),
-      // Vercel store is private; SDK supports it but plugin types only declare 'public'
       access: (process.env.BLOB_ACCESS ?? 'private') as 'public',
       collections: {
-        media: {
-          disablePayloadAccessControl: true,
-        },
+        media: {},
       },
       token: process.env.BLOB_READ_WRITE_TOKEN,
     }),

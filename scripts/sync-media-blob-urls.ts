@@ -12,12 +12,25 @@ async function getPayloadInstance() {
   return getPayload({ config: await config })
 }
 
+function proxyMediaUrl(filename: string): string {
+  return `/api/media/file/${encodeURIComponent(filename)}`
+}
+
+function isPrivateBlobUrl(url: string | null | undefined): boolean {
+  return typeof url === 'string' && url.includes('.private.blob.vercel-storage.com/')
+}
+
+function isPublicBlobUrl(url: string | null | undefined): boolean {
+  return typeof url === 'string' && url.includes('.public.blob.vercel-storage.com/')
+}
+
 async function syncMediaBlobUrls(): Promise<void> {
   const token = process.env.BLOB_READ_WRITE_TOKEN
   if (!token) {
     throw new Error('BLOB_READ_WRITE_TOKEN is not set in .env')
   }
 
+  const blobAccess = process.env.BLOB_ACCESS ?? 'private'
   const payload = await getPayloadInstance()
   const blobResult = await list({ token, limit: 1000 })
   const blobByFilename = new Map(blobResult.blobs.map((blob) => [blob.pathname, blob.url]))
@@ -34,6 +47,7 @@ async function syncMediaBlobUrls(): Promise<void> {
 
   let updated = 0
   let alreadySynced = 0
+  let repairedPrivate = 0
   const samples: string[] = []
 
   for (const doc of mediaResult.docs) {
@@ -46,7 +60,28 @@ async function syncMediaBlobUrls(): Promise<void> {
       continue
     }
 
-    if (doc.url === blobUrl) {
+    const proxyUrl = proxyMediaUrl(filename)
+    const targetUrl = blobAccess === 'private' ? proxyUrl : blobUrl
+
+    if (blobAccess === 'private' && (isPrivateBlobUrl(doc.url) || doc.url !== proxyUrl)) {
+      await payload.update({
+        collection: 'media',
+        id: doc.id,
+        data: {
+          url: proxyUrl,
+        },
+      })
+
+      updated++
+      repairedPrivate++
+      if (samples.length < 3) {
+        samples.push(`${filename}: ${doc.url ?? 'null'} -> ${proxyUrl}`)
+      }
+      console.log(`  Repaired private URL: ${filename}`)
+      continue
+    }
+
+    if (doc.url === targetUrl) {
       alreadySynced++
       continue
     }
@@ -55,21 +90,23 @@ async function syncMediaBlobUrls(): Promise<void> {
       collection: 'media',
       id: doc.id,
       data: {
-        url: blobUrl,
+        url: targetUrl,
       },
     })
 
     updated++
     if (samples.length < 3) {
-      samples.push(`${filename} -> ${blobUrl}`)
+      samples.push(`${filename} -> ${targetUrl}`)
     }
     console.log(`  Updated URL: ${filename}`)
   }
 
   console.log('')
   console.log('=== Sync summary ===')
+  console.log(`Blob access mode: ${blobAccess}`)
   console.log(`Blob files: ${blobResult.blobs.length}`)
   console.log(`Media updated: ${updated}`)
+  console.log(`Private URLs repaired: ${repairedPrivate}`)
   console.log(`Already synced: ${alreadySynced}`)
   if (samples.length > 0) {
     console.log('Sample URLs:')

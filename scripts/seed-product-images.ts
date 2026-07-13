@@ -202,7 +202,7 @@ async function seedProductImages(force = false): Promise<void> {
     if (blobUrls.length > 0) {
       console.log(`Sample blob URL: ${blobUrls[0]}`)
     } else if (attached.length > 0) {
-      console.log('Note: URLs may use /api/media/file/ unless disablePayloadAccessControl is enabled.')
+      console.log('Note: private Blob stores serve images via /api/media/file/ proxy URLs.')
     }
   }
 }

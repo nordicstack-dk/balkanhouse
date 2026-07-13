@@ -17,7 +17,9 @@ async function main() {
     sort: 'sku',
   })
 
-  let blobCount = 0
+  let proxyCount = 0
+  let publicBlobCount = 0
+  let privateBlobCount = 0
   let localCount = 0
   let missingCount = 0
   const samples: string[] = []
@@ -37,17 +39,23 @@ async function main() {
       continue
     }
 
-    if (url.includes('blob.vercel-storage.com')) {
-      blobCount++
-      if (samples.length < 3) samples.push(`${product.sku}: ${url}`)
+    if (url.startsWith('/api/media/file/')) {
+      proxyCount++
+    } else if (url.includes('.private.blob.vercel-storage.com')) {
+      privateBlobCount++
+    } else if (url.includes('.public.blob.vercel-storage.com')) {
+      publicBlobCount++
     } else {
       localCount++
-      if (samples.length < 3) samples.push(`${product.sku}: ${url}`)
     }
+
+    if (samples.length < 3) samples.push(`${product.sku}: ${url}`)
   }
 
   console.log('=== Product image URL verification ===')
-  console.log(`Products with blob URLs: ${blobCount}`)
+  console.log(`Products with Payload proxy URLs: ${proxyCount}`)
+  console.log(`Products with public blob URLs: ${publicBlobCount}`)
+  console.log(`Products with private blob URLs (broken): ${privateBlobCount}`)
   console.log(`Products with local/other URLs: ${localCount}`)
   console.log(`Products without images: ${missingCount}`)
   console.log('Sample URLs:')
