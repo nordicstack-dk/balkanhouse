@@ -17,6 +17,7 @@ type Props = {
   searchParams: Promise<{ q?: string }>
 }
 
+export const dynamic = 'force-dynamic'
 export const revalidate = 60
 
 export default async function CategoryShopPage({ params, searchParams }: Props) {
