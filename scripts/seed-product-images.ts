@@ -68,6 +68,10 @@ async function findMediaByAlt(
   return typeof id === 'number' ? id : null
 }
 
+function isBlobUrl(url: string | null | undefined): boolean {
+  return typeof url === 'string' && url.includes('blob.vercel-storage.com')
+}
+
 async function seedProductImages(force = false): Promise<void> {
   if (!process.env.PAYLOAD_SECRET) {
     throw new Error('PAYLOAD_SECRET is not set in .env')
@@ -75,6 +79,13 @@ async function seedProductImages(force = false): Promise<void> {
 
   if (!process.env.DATABASE_URL) {
     throw new Error('DATABASE_URL is not set in .env')
+  }
+
+  const blobEnabled = Boolean(process.env.BLOB_READ_WRITE_TOKEN)
+  if (!blobEnabled) {
+    console.warn('Warning: BLOB_READ_WRITE_TOKEN is not set — media will be stored locally.')
+  } else {
+    console.log('Vercel Blob storage enabled via BLOB_READ_WRITE_TOKEN')
   }
 
   if (!fs.existsSync(SEED_IMAGES_DIR)) {
@@ -88,6 +99,7 @@ async function seedProductImages(force = false): Promise<void> {
   const skipped: string[] = []
   const missing: string[] = []
   const notFound: string[] = []
+  const blobUrls: string[] = []
 
   for (const seed of PRODUCT_IMAGE_SEEDS) {
     const imagePath = resolveImagePath(seed.sku)
@@ -124,6 +136,15 @@ async function seedProductImages(force = false): Promise<void> {
 
     let mediaId = await findMediaByAlt(payload, seed.alt)
 
+    if (mediaId && force) {
+      await payload.delete({
+        collection: 'media',
+        id: mediaId,
+      })
+      mediaId = null
+      console.log(`  Deleted existing media for re-upload: ${seed.sku}`)
+    }
+
     if (!mediaId) {
       const media = await payload.create({
         collection: 'media',
@@ -134,7 +155,22 @@ async function seedProductImages(force = false): Promise<void> {
       })
 
       mediaId = media.id
-      console.log(`  Uploaded media: ${seed.sku}`)
+      const url = media.url
+      if (isBlobUrl(url)) {
+        blobUrls.push(url!)
+        console.log(`  Uploaded to Blob: ${seed.sku}`)
+      } else {
+        console.log(`  Uploaded media (local): ${seed.sku}`)
+      }
+    } else {
+      const existing = await payload.findByID({
+        collection: 'media',
+        id: mediaId,
+      })
+      if (isBlobUrl(existing.url)) {
+        blobUrls.push(existing.url!)
+      }
+      console.log(`  Reusing existing media: ${seed.sku}`)
     }
 
     await payload.update({
@@ -160,6 +196,14 @@ async function seedProductImages(force = false): Promise<void> {
   }
   if (notFound.length > 0) {
     console.log(`Products not found (${notFound.length}): ${notFound.join(', ')}`)
+  }
+  if (blobEnabled) {
+    console.log(`Blob URLs (${blobUrls.length}): ${blobUrls.length > 0 ? 'yes' : 'none'}`)
+    if (blobUrls.length > 0) {
+      console.log(`Sample blob URL: ${blobUrls[0]}`)
+    } else if (attached.length > 0) {
+      console.log('Note: URLs may use /api/media/file/ unless disablePayloadAccessControl is enabled.')
+    }
   }
 }
 

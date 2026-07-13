@@ -1,6 +1,7 @@
 ﻿import { postgresAdapter } from '@payloadcms/db-postgres'
 import { mcpPlugin } from '@payloadcms/plugin-mcp'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
+import { vercelBlobStorage } from '@payloadcms/storage-vercel-blob'
 import path from 'path'
 import { buildConfig } from 'payload'
 import { fileURLToPath } from 'url'
@@ -41,5 +42,18 @@ export default buildConfig({
     fallback: true,
     defaultLocale: 'ro',
   },
-  plugins: [mcpPlugin({})],
+  plugins: [
+    mcpPlugin({}),
+    vercelBlobStorage({
+      enabled: Boolean(process.env.BLOB_READ_WRITE_TOKEN),
+      // Vercel store is private; SDK supports it but plugin types only declare 'public'
+      access: (process.env.BLOB_ACCESS ?? 'private') as 'public',
+      collections: {
+        media: {
+          disablePayloadAccessControl: true,
+        },
+      },
+      token: process.env.BLOB_READ_WRITE_TOKEN,
+    }),
+  ],
 })
