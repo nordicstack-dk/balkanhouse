@@ -30,7 +30,7 @@ async function syncMediaBlobUrls(): Promise<void> {
     throw new Error('BLOB_READ_WRITE_TOKEN is not set in .env')
   }
 
-  const blobAccess = process.env.BLOB_ACCESS ?? 'private'
+  const blobAccess = process.env.BLOB_ACCESS ?? 'public'
   const payload = await getPayloadInstance()
   const blobResult = await list({ token, limit: 1000 })
   const blobByFilename = new Map(blobResult.blobs.map((blob) => [blob.pathname, blob.url]))
@@ -48,6 +48,7 @@ async function syncMediaBlobUrls(): Promise<void> {
   let updated = 0
   let alreadySynced = 0
   let repairedPrivate = 0
+  let skipped = 0
   const samples: string[] = []
 
   for (const doc of mediaResult.docs) {
@@ -57,48 +58,60 @@ async function syncMediaBlobUrls(): Promise<void> {
     const blobUrl = blobByFilename.get(filename)
     if (!blobUrl) {
       console.log(`  No blob for: ${filename}`)
+      skipped++
       continue
     }
 
     const proxyUrl = proxyMediaUrl(filename)
     const targetUrl = blobAccess === 'private' ? proxyUrl : blobUrl
 
-    if (blobAccess === 'private' && (isPrivateBlobUrl(doc.url) || doc.url !== proxyUrl)) {
+    try {
+      if (blobAccess === 'private' && (isPrivateBlobUrl(doc.url) || doc.url !== proxyUrl)) {
+        await payload.update({
+          collection: 'media',
+          id: doc.id,
+          data: {
+            url: proxyUrl,
+          },
+        })
+
+        updated++
+        repairedPrivate++
+        if (samples.length < 3) {
+          samples.push(`${filename}: ${doc.url ?? 'null'} -> ${proxyUrl}`)
+        }
+        console.log(`  Repaired private URL: ${filename}`)
+        continue
+      }
+
+      if (doc.url === targetUrl) {
+        alreadySynced++
+        continue
+      }
+
       await payload.update({
         collection: 'media',
         id: doc.id,
         data: {
-          url: proxyUrl,
+          url: targetUrl,
         },
       })
 
       updated++
-      repairedPrivate++
       if (samples.length < 3) {
-        samples.push(`${filename}: ${doc.url ?? 'null'} -> ${proxyUrl}`)
+        samples.push(`${filename} -> ${targetUrl}`)
       }
-      console.log(`  Repaired private URL: ${filename}`)
-      continue
+      console.log(`  Updated URL: ${filename}`)
+    } catch (error: unknown) {
+      const status =
+        error && typeof error === 'object' && 'status' in error ? Number(error.status) : null
+      if (status === 404) {
+        console.log(`  Skipped missing media record: ${filename} (id ${doc.id})`)
+        skipped++
+        continue
+      }
+      throw error
     }
-
-    if (doc.url === targetUrl) {
-      alreadySynced++
-      continue
-    }
-
-    await payload.update({
-      collection: 'media',
-      id: doc.id,
-      data: {
-        url: targetUrl,
-      },
-    })
-
-    updated++
-    if (samples.length < 3) {
-      samples.push(`${filename} -> ${targetUrl}`)
-    }
-    console.log(`  Updated URL: ${filename}`)
   }
 
   console.log('')
@@ -108,6 +121,7 @@ async function syncMediaBlobUrls(): Promise<void> {
   console.log(`Media updated: ${updated}`)
   console.log(`Private URLs repaired: ${repairedPrivate}`)
   console.log(`Already synced: ${alreadySynced}`)
+  console.log(`Skipped: ${skipped}`)
   if (samples.length > 0) {
     console.log('Sample URLs:')
     for (const sample of samples) {

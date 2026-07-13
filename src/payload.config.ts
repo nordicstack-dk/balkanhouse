@@ -18,6 +18,8 @@ import { Users } from './collections/Users'
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
+const blobAccess = (process.env.BLOB_ACCESS ?? 'public') as 'public' | 'private'
+
 export default buildConfig({
   admin: {
     user: Users.slug,
@@ -46,9 +48,13 @@ export default buildConfig({
     mcpPlugin({}),
     vercelBlobStorage({
       enabled: Boolean(process.env.BLOB_READ_WRITE_TOKEN),
-      access: (process.env.BLOB_ACCESS ?? 'private') as 'public',
+      access: blobAccess,
       collections: {
-        media: {},
+        media: {
+          // Public blobs: store direct *.public.blob.vercel-storage.com URLs in the DB.
+          // Private blobs: keep Payload proxy URLs at /api/media/file/.
+          disablePayloadAccessControl: blobAccess === 'public',
+        },
       },
       token: process.env.BLOB_READ_WRITE_TOKEN,
     }),
