@@ -7,6 +7,7 @@
   --color-wood-light: #c4a882;
   --color-forest: #2d4a3e;
   --color-gold: #c9a227;
+  --color-gold-light: #e0bf55;
   --color-text: #2c1810;
   --color-text-muted: #5c4a42;
   --color-success: #2d6a4f;
@@ -14,6 +15,7 @@
   --color-danger: #9b2335;
 
   --font-sans: 'Source Sans 3', system-ui, sans-serif;
+  --font-display: var(--font-playfair, 'Playfair Display'), Georgia, serif;
 }
 
 :root {

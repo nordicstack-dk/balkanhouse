@@ -20,7 +20,7 @@ export function SearchBar({ defaultValue = '' }: SearchBarProps) {
       />
       <button
         type="submit"
-        className="rounded-lg bg-burgundy px-4 py-2 text-sm font-medium text-cream transition hover:bg-burgundy-dark"
+        className="rounded-lg bg-burgundy px-4 py-2 text-sm font-medium text-cream shadow-sm transition-all hover:bg-burgundy-dark hover:shadow-md active:scale-[0.98]"
       >
         {t('search')}
       </button>

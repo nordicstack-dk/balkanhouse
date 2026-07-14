@@ -1,5 +1,3 @@
-'use client'
-
 import clsx from 'clsx'
 import { useTranslations } from 'next-intl'
 
@@ -17,7 +15,7 @@ export function StockBadge({ status }: { status: StockStatus }) {
   return (
     <span
       className={clsx(
-        'inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium',
+        'inline-flex shrink-0 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium',
         styles[status],
       )}
     >

@@ -15,6 +15,8 @@
     "heroSubtitle": "Authentic Romanian products delivered with care.",
     "shopNow": "Browse shop",
     "promotionsTitle": "Special offers",
+    "carouselPrev": "Previous products",
+    "carouselNext": "Next products",
     "categoriesTitle": "Popular categories",
     "viewAll": "View all products"
   },
@@ -24,10 +26,14 @@
     "searchPlaceholder": "Search products...",
     "search": "Search",
     "noProducts": "No products found.",
+    "paginationLabel": "Pages",
+    "prevPage": "Previous page",
+    "nextPage": "Next page",
     "resultsFor": "Results for „{query}\""
   },
   "product": {
     "addToCart": "Add to cart",
+    "addedToCart": "Added to cart",
     "outOfStock": "Unavailable",
     "ingredients": "Ingredients",
     "allergens": "Allergens",
@@ -50,6 +56,8 @@
     "empty": "Your cart is empty.",
     "continueShopping": "Continue shopping",
     "quantity": "Quantity",
+    "decreaseQuantity": "Decrease quantity",
+    "increaseQuantity": "Increase quantity",
     "remove": "Remove",
     "subtotal": "Subtotal",
     "submitOrder": "Submit order",
@@ -95,6 +103,7 @@
       "missing_fields": "Please fill in all required fields.",
       "missing_address": "Please fill in the delivery address.",
       "invalid_email": "The email address is not valid.",
+      "unavailable_products": "Some products in your cart are no longer available. Please update your cart and try again.",
       "server_error": "Something went wrong. Please try again."
     }
   },

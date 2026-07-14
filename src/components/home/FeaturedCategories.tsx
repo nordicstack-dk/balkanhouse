@@ -24,12 +24,15 @@ export function FeaturedCategories({ categories }: FeaturedCategoriesProps) {
           <Link
             key={cat.id}
             href={`/shop/${cat.slug}`}
-            className="group flex flex-col items-center justify-center rounded-xl border border-cream-dark bg-white p-6 text-center shadow-sm transition hover:border-wood-light hover:shadow-md"
+            className="group flex flex-col items-center justify-center rounded-xl border border-cream-dark bg-white p-6 text-center shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-wood-light hover:shadow-lg active:translate-y-0"
           >
-            <span className="mb-2 text-3xl" aria-hidden>
+            <span
+              className="mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-cream text-3xl transition-transform duration-200 group-hover:scale-110"
+              aria-hidden
+            >
               🧺
             </span>
-            <span className="font-semibold text-text group-hover:text-burgundy">
+            <span className="font-semibold text-text transition-colors group-hover:text-burgundy">
               {cat.name}
             </span>
           </Link>
@@ -38,7 +41,7 @@ export function FeaturedCategories({ categories }: FeaturedCategoriesProps) {
       <div className="mt-8 text-center">
         <Link
           href="/shop"
-          className="inline-block rounded-lg border-2 border-burgundy px-8 py-3 font-semibold text-burgundy transition hover:bg-burgundy hover:text-cream"
+          className="inline-block rounded-lg border-2 border-burgundy px-8 py-3 font-semibold text-burgundy transition-all hover:bg-burgundy hover:text-cream hover:shadow-md active:scale-[0.98]"
         >
           {t('viewAll')}
         </Link>

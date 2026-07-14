@@ -1,7 +1,14 @@
 import type { CollectionConfig } from 'payload'
 
+import { revalidateStorefrontTags } from '@/lib/revalidate-storefront'
+
 export const Categories: CollectionConfig = {
   slug: 'categories',
+  hooks: {
+    // Product caches embed category docs, so invalidate those too.
+    afterChange: [() => revalidateStorefrontTags('categories', 'products')],
+    afterDelete: [() => revalidateStorefrontTags('categories', 'products')],
+  },
   admin: {
     useAsTitle: 'name',
     defaultColumns: ['name', 'slug', 'parent'],

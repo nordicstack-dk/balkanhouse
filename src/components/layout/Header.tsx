@@ -1,10 +1,13 @@
 'use client'
 
-import { useTranslations } from 'next-intl'
+import { Suspense } from 'react'
+import { useLocale, useTranslations } from 'next-intl'
+import { useSearchParams } from 'next/navigation'
 
 import { Link, usePathname } from '@/i18n/navigation'
 
 import { CartButton } from '@/components/cart/CartButton'
+import { LinkPendingSpinner } from '@/components/ui/LinkPendingSpinner'
 
 export function Header() {
   const t = useTranslations('nav')
@@ -17,9 +20,23 @@ export function Header() {
   ]
 
   return (
-    <header className="sticky top-0 z-50 border-b border-burgundy-dark/20 bg-burgundy text-cream shadow-md">
+    <header className="on-dark sticky top-0 z-50 bg-burgundy text-cream shadow-md">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
-        <Link href="/" className="text-xl font-bold tracking-tight hover:opacity-90">
+        <Link
+          href="/"
+          className="flex items-center gap-2 text-xl font-bold tracking-tight transition hover:opacity-90"
+          style={{ fontFamily: 'var(--font-playfair, Georgia, serif)' }}
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 16 16"
+            className="text-gold"
+            aria-hidden
+          >
+            <path d="M8 0 L16 8 L8 16 L0 8 Z" fill="currentColor" />
+            <path d="M8 4 L12 8 L8 12 L4 8 Z" fill="var(--bh-burgundy)" />
+          </svg>
           Balkan House
         </Link>
         <nav className="hidden items-center gap-1 md:flex">
@@ -27,14 +44,17 @@ export function Header() {
             <Link
               key={link.href}
               href={link.href}
-              className="rounded-md px-3 py-2 text-sm font-medium transition hover:bg-burgundy-dark/50"
+              className="inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-burgundy-dark/50 active:bg-burgundy-dark/70"
             >
               {link.label}
+              <LinkPendingSpinner className="h-3.5 w-3.5" />
             </Link>
           ))}
         </nav>
         <div className="flex items-center gap-2">
-          <LanguageSwitcher />
+          <Suspense fallback={null}>
+            <LanguageSwitcher />
+          </Suspense>
           <CartButton />
         </div>
       </div>
@@ -43,18 +63,23 @@ export function Header() {
           <Link
             key={link.href}
             href={link.href}
-            className="shrink-0 rounded-md px-3 py-1.5 text-sm transition hover:bg-burgundy-dark/50"
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-md px-3 py-1.5 text-sm transition-colors hover:bg-burgundy-dark/50 active:bg-burgundy-dark/70"
           >
             {link.label}
+            <LinkPendingSpinner className="h-3.5 w-3.5" />
           </Link>
         ))}
       </nav>
+      <div className="bh-motif-gold" aria-hidden />
     </header>
   )
 }
 
 function LanguageSwitcher() {
   const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const activeLocale = useLocale()
+  const query = Object.fromEntries(searchParams.entries())
   const locales = [
     { code: 'ro', label: 'RO' },
     { code: 'da', label: 'DA' },
@@ -66,9 +91,14 @@ function LanguageSwitcher() {
       {locales.map((loc) => (
         <Link
           key={loc.code}
-          href={pathname}
+          href={{ pathname, query }}
           locale={loc.code}
-          className="rounded px-2 py-1 font-medium transition hover:bg-burgundy-dark/60"
+          aria-current={loc.code === activeLocale ? 'true' : undefined}
+          className={`rounded px-2 py-1 font-medium transition-colors ${
+            loc.code === activeLocale
+              ? 'bg-cream text-burgundy'
+              : 'hover:bg-burgundy-dark/60 active:bg-burgundy-dark'
+          }`}
         >
           {loc.label}
         </Link>

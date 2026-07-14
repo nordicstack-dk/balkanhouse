@@ -15,6 +15,8 @@
     "heroSubtitle": "Autentiske rumænske produkter leveret med omhu.",
     "shopNow": "Se butikken",
     "promotionsTitle": "Tilbud",
+    "carouselPrev": "Forrige produkter",
+    "carouselNext": "Næste produkter",
     "categoriesTitle": "Populære kategorier",
     "viewAll": "Se alle produkter"
   },
@@ -24,10 +26,14 @@
     "searchPlaceholder": "Søg produkter...",
     "search": "Søg",
     "noProducts": "Ingen produkter fundet.",
+    "paginationLabel": "Sider",
+    "prevPage": "Forrige side",
+    "nextPage": "Næste side",
     "resultsFor": "Resultater for „{query}\""
   },
   "product": {
     "addToCart": "Tilføj til kurv",
+    "addedToCart": "Tilføjet til kurven",
     "outOfStock": "Udsolgt",
     "ingredients": "Ingredienser",
     "allergens": "Allergener",
@@ -50,6 +56,8 @@
     "empty": "Kurven er tom.",
     "continueShopping": "Fortsæt med at handle",
     "quantity": "Antal",
+    "decreaseQuantity": "Reducér antal",
+    "increaseQuantity": "Forøg antal",
     "remove": "Fjern",
     "subtotal": "Subtotal",
     "submitOrder": "Send ordre",
@@ -95,6 +103,7 @@
       "missing_fields": "Udfyld alle obligatoriske felter.",
       "missing_address": "Udfyld leveringsadressen.",
       "invalid_email": "E-mailadressen er ikke gyldig.",
+      "unavailable_products": "Nogle varer i din kurv er ikke længere tilgængelige. Opdater kurven og prøv igen.",
       "server_error": "Der opstod en fejl. Prøv igen."
     }
   },

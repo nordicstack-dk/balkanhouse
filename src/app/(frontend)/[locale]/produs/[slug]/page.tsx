@@ -21,7 +21,11 @@ type Props = {
   params: Promise<{ locale: string; slug: string }>
 }
 
-export const dynamic = 'force-dynamic'
+// ISR: no product pages at build time; each is rendered on first visit,
+// cached, and regenerated at most every 60s using the tagged storefront cache.
+export function generateStaticParams() {
+  return []
+}
 export const revalidate = 60
 
 export default async function ProductPage({ params }: Props) {
@@ -50,7 +54,7 @@ export default async function ProductPage({ params }: Props) {
             alt={product.title}
             fill
             className="object-cover"
-            sizes="(max-width: 768px) 100vw, 50vw"
+            sizes="(max-width: 768px) 100vw, 576px"
             priority
           />
         ) : (

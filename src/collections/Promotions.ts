@@ -1,7 +1,13 @@
 import type { CollectionConfig } from 'payload'
 
+import { revalidateStorefrontTags } from '@/lib/revalidate-storefront'
+
 export const Promotions: CollectionConfig = {
   slug: 'promotions',
+  hooks: {
+    afterChange: [() => revalidateStorefrontTags('promotions')],
+    afterDelete: [() => revalidateStorefrontTags('promotions')],
+  },
   admin: {
     useAsTitle: 'name',
     defaultColumns: ['name', 'percentOff', 'startDate', 'endDate'],

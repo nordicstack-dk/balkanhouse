@@ -9,6 +9,8 @@ import { Link, useRouter } from '@/i18n/navigation'
 import { SHIPPING_METHOD, type ShippingMethod } from '@/lib/contracts'
 import { applyPromo, formatPriceDkk } from '@/lib/pricing'
 import { cartSubtotal } from '@/lib/cart'
+import { Skeleton } from '@/components/ui/Skeleton'
+import { Spinner } from '@/components/ui/Spinner'
 
 const inputClassName =
   'w-full rounded-lg border border-cream-dark px-3 py-2 text-text focus:border-burgundy focus:outline-none focus:ring-1 focus:ring-burgundy'
@@ -30,7 +32,24 @@ export function CheckoutForm() {
   const [submitting, setSubmitting] = useState(false)
 
   if (!hydrated) {
-    return <p className="text-text-muted">{t('loading')}</p>
+    return (
+      <div aria-busy="true" className="grid gap-8 lg:grid-cols-2">
+        <div className="space-y-4 rounded-xl border border-cream-dark bg-white p-6">
+          <Skeleton className="h-6 w-40" />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-12 w-full" />
+        </div>
+        <div className="space-y-4 rounded-xl border border-cream-dark bg-white p-6">
+          <Skeleton className="h-6 w-40" />
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-6 w-full" />
+        </div>
+      </div>
+    )
   }
 
   if (!items.length) {
@@ -76,6 +95,7 @@ export function CheckoutForm() {
         missing_fields: t('errors.missing_fields'),
         missing_address: t('errors.missing_address'),
         invalid_email: t('errors.invalid_email'),
+        unavailable_products: t('errors.unavailable_products'),
         server_error: t('errors.server_error'),
       }
       setError(errorMessages[result.error] ?? t('errors.server_error'))
@@ -292,8 +312,9 @@ export function CheckoutForm() {
         <button
           type="submit"
           disabled={submitting}
-          className="w-full rounded-lg bg-burgundy py-3 font-semibold text-cream transition hover:bg-burgundy-dark disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-burgundy py-3 font-semibold text-cream shadow-sm transition-all hover:bg-burgundy-dark hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:shadow-sm disabled:active:scale-100"
         >
+          {submitting && <Spinner className="h-4 w-4" />}
           {submitting ? t('submitting') : t('submitOrder')}
         </button>
       </div>

@@ -15,6 +15,8 @@
     "heroSubtitle": "Produse românești autentice — conserve, dulciuri, mezeluri și multe altele, livrate cu grijă.",
     "shopNow": "Vezi magazinul",
     "promotionsTitle": "Oferte speciale",
+    "carouselPrev": "Produsele anterioare",
+    "carouselNext": "Produsele următoare",
     "categoriesTitle": "Categorii populare",
     "viewAll": "Vezi toate produsele"
   },
@@ -24,10 +26,14 @@
     "searchPlaceholder": "Caută produse...",
     "search": "Caută",
     "noProducts": "Nu am găsit produse.",
+    "paginationLabel": "Pagini",
+    "prevPage": "Pagina anterioară",
+    "nextPage": "Pagina următoare",
     "resultsFor": "Rezultate pentru „{query}\""
   },
   "product": {
     "addToCart": "Adaugă în coș",
+    "addedToCart": "Adăugat în coș",
     "outOfStock": "Indisponibil",
     "ingredients": "Ingrediente",
     "allergens": "Alergeni",
@@ -50,6 +56,8 @@
     "empty": "Coșul este gol.",
     "continueShopping": "Continuă cumpărăturile",
     "quantity": "Cantitate",
+    "decreaseQuantity": "Scade cantitatea",
+    "increaseQuantity": "Crește cantitatea",
     "remove": "Elimină",
     "subtotal": "Subtotal",
     "submitOrder": "Trimite comanda",
@@ -95,6 +103,7 @@
       "missing_fields": "Completează toate câmpurile obligatorii.",
       "missing_address": "Completează adresa de livrare.",
       "invalid_email": "Adresa de email nu este validă.",
+      "unavailable_products": "Unele produse din coș nu mai sunt disponibile. Actualizează coșul și încearcă din nou.",
       "server_error": "A apărut o eroare. Încearcă din nou."
     }
   },

@@ -22,10 +22,10 @@ export function CategoryNav({ categories, activeSlug }: CategoryNavProps) {
         <li>
           <Link
             href="/shop"
-            className={`block rounded-md px-3 py-2 text-sm transition ${
+            className={`block rounded-md px-3 py-2 text-sm transition-colors ${
               !activeSlug
-                ? 'bg-burgundy text-cream'
-                : 'text-text hover:bg-cream-dark'
+                ? 'bg-burgundy font-medium text-cream shadow-sm'
+                : 'text-text hover:bg-cream-dark active:bg-cream-dark/70'
             }`}
           >
             {t('allCategories')}
@@ -35,10 +35,10 @@ export function CategoryNav({ categories, activeSlug }: CategoryNavProps) {
           <li key={cat.id}>
             <Link
               href={`/shop/${cat.slug}`}
-              className={`block rounded-md px-3 py-2 text-sm transition ${
+              className={`block rounded-md px-3 py-2 text-sm transition-colors ${
                 activeSlug === cat.slug
-                  ? 'bg-burgundy text-cream'
-                  : 'text-text hover:bg-cream-dark'
+                  ? 'bg-burgundy font-medium text-cream shadow-sm'
+                  : 'text-text hover:bg-cream-dark active:bg-cream-dark/70'
               }`}
             >
               {cat.name}

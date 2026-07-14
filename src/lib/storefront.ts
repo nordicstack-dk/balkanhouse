@@ -11,7 +11,11 @@ export type ProductWithRelations = Product & {
   images?: Media[] | null
 }
 
-const REVALIDATE_SECONDS = 60
+// Collection hooks call revalidateTag on every CMS change (see src/lib/revalidate-storefront.ts),
+// so this TTL is only a fallback; promotions still activate/expire within this window.
+const REVALIDATE_SECONDS = 300
+
+export const SHOP_PAGE_SIZE = 24
 
 export async function getCategories(locale: Locale): Promise<Category[]> {
   return unstable_cache(
@@ -99,11 +103,77 @@ async function fetchProducts(options: {
     locale: options.locale,
     where,
     limit: options.limit ?? 100,
-    depth: 2,
+    depth: 1,
     sort: 'title',
   })
 
   return result.docs as ProductWithRelations[]
+}
+
+export type ProductListPage = {
+  docs: ProductWithRelations[]
+  page: number
+  totalPages: number
+}
+
+export async function getProductsPage(options: {
+  locale: Locale
+  categoryId?: number
+  search?: string
+  page?: number
+}): Promise<ProductListPage> {
+  const search = options.search?.trim()
+  const page = Math.max(1, Math.floor(options.page ?? 1))
+
+  if (search) {
+    return fetchProductsPage({ ...options, page })
+  }
+
+  return unstable_cache(
+    () => fetchProductsPage({ ...options, page }),
+    [
+      'storefront',
+      'products-page',
+      options.locale,
+      String(options.categoryId ?? 'all'),
+      String(page),
+    ],
+    { revalidate: REVALIDATE_SECONDS, tags: ['products'] },
+  )()
+}
+
+async function fetchProductsPage(options: {
+  locale: Locale
+  categoryId?: number
+  search?: string
+  page: number
+}): Promise<ProductListPage> {
+  const payload = await getPayloadClient()
+  const where: Where = {}
+
+  if (options.categoryId) {
+    where.category = { equals: options.categoryId }
+  }
+
+  if (options.search?.trim()) {
+    where.title = { contains: options.search.trim() }
+  }
+
+  const result = await payload.find({
+    collection: 'products',
+    locale: options.locale,
+    where,
+    limit: SHOP_PAGE_SIZE,
+    page: options.page,
+    depth: 1,
+    sort: 'title',
+  })
+
+  return {
+    docs: result.docs as ProductWithRelations[],
+    page: result.page ?? options.page,
+    totalPages: result.totalPages ?? 1,
+  }
 }
 
 export async function getProductBySku(
@@ -118,7 +188,7 @@ export async function getProductBySku(
         locale,
         where: { sku: { equals: sku } },
         limit: 1,
-        depth: 2,
+        depth: 1,
       })
       return (result.docs[0] as ProductWithRelations) ?? null
     },
@@ -141,6 +211,8 @@ export async function getActivePromotions(): Promise<Promotion[]> {
             { endDate: { greater_than_equal: now } },
           ],
         },
+        // depth 2 is required here: promotion -> product -> images must all be
+        // populated so the homepage carousel can render product cards with images.
         limit: 50,
         depth: 2,
       })

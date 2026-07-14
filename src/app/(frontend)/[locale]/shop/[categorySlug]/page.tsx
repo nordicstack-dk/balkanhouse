@@ -17,8 +17,8 @@ type Props = {
   searchParams: Promise<{ q?: string }>
 }
 
-export const dynamic = 'force-dynamic'
-export const revalidate = 60
+// This page reads searchParams (?q=) so it renders per request;
+// the tagged storefront cache underneath keeps it fast.
 
 export default async function CategoryShopPage({ params, searchParams }: Props) {
   const { locale, categorySlug } = await params

@@ -7,6 +7,7 @@ import {
   UNIT_OPTIONS,
 } from '@/lib/contracts'
 import { formatProductAdminLabel, resolveLocalizedString } from '@/lib/products/admin-label'
+import { revalidateStorefrontTags } from '@/lib/revalidate-storefront'
 
 export const Products: CollectionConfig = {
   slug: 'products',
@@ -16,6 +17,9 @@ export const Products: CollectionConfig = {
     listSearchableFields: ['sku', 'title', 'adminLabel'],
   },
   hooks: {
+    // Promotions cache also embeds product docs (depth 2), so invalidate both.
+    afterChange: [() => revalidateStorefrontTags('products', 'promotions')],
+    afterDelete: [() => revalidateStorefrontTags('products', 'promotions')],
     beforeChange: [
       ({ data, originalDoc, req }) => {
         if (!data) {

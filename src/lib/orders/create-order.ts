@@ -1,10 +1,12 @@
-import { ORDER_STATUS, SHIPPING_METHOD, type ShippingMethod } from '@/lib/contracts'
+import { ORDER_STATUS, SHIPPING_METHOD, STOCK_STATUS, type ShippingMethod } from '@/lib/contracts'
 import type { CartItem } from '@/lib/cart'
 import { sendOrderReceived } from '@/lib/email/send-order-email'
 import { applyPromo } from '@/lib/pricing'
 import { getPayloadClient } from '@/lib/payload'
 import { generateOrderNumber } from '@/lib/orders/order-number'
 import { computeLineTotalDkk, computeOrderTotals } from '@/lib/orders/order-totals'
+import { getActivePromotions } from '@/lib/storefront'
+import { getPromoPercentForProduct } from '@/lib/promotions'
 import type { Order } from '@/payload-types'
 
 export type CustomerAddressInput = {
@@ -34,18 +36,50 @@ export type CreateOrderResult =
   | { ok: true; orderNumber: string; orderId: number }
   | { ok: false; error: string }
 
-function lineItemFromCart(item: CartItem) {
-  const unitPriceDkk = applyPromo(item.priceDkk, item.promoPercent)
+/**
+ * Rebuilds line items from the database instead of trusting the client cart.
+ * The cart is only used for product identity and quantity; price, promotion,
+ * unit and SKU are re-read at order time so expired promotions and tampered
+ * localStorage values never reach an order. Returns null if any product no
+ * longer exists or is out of stock.
+ */
+async function buildVerifiedLineItems(items: CartItem[]) {
+  const payload = await getPayloadClient()
+  const ids = items.map((item) => item.productId)
 
-  return {
-    product: item.productId,
-    sku: item.sku,
-    productName: item.title,
-    unit: item.unit,
-    unitPriceDkk,
-    quantity: item.quantity,
-    lineTotalDkk: computeLineTotalDkk(unitPriceDkk, item.quantity),
+  const [productsResult, promotions] = await Promise.all([
+    payload.find({
+      collection: 'products',
+      where: { id: { in: ids } },
+      limit: ids.length,
+      depth: 0,
+    }),
+    getActivePromotions(),
+  ])
+  const productsById = new Map(productsResult.docs.map((p) => [p.id, p]))
+
+  const lineItems = []
+  for (const item of items) {
+    const product = productsById.get(item.productId)
+    if (!product || product.stockStatus === STOCK_STATUS.OUT) {
+      return null
+    }
+
+    const quantity = Math.max(1, Math.floor(Number(item.quantity) || 1))
+    const promoPercent = getPromoPercentForProduct(product.id, promotions)
+    const unitPriceDkk = applyPromo(product.priceDkk, promoPercent)
+
+    lineItems.push({
+      product: product.id,
+      sku: product.sku,
+      productName: item.title || product.title,
+      unit: product.unit,
+      unitPriceDkk,
+      quantity,
+      lineTotalDkk: computeLineTotalDkk(unitPriceDkk, quantity),
+    })
   }
+  return lineItems
 }
 
 export async function createOrder(input: CreateOrderInput): Promise<CreateOrderResult> {
@@ -90,11 +124,15 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
     customerAddress = { street, city, postalCode, country: DELIVERY_COUNTRY }
   }
 
-  const lineItems = items.map(lineItemFromCart)
-  const shippingCostDkk = 0
-  const { subtotalDkk, totalDkk } = computeOrderTotals({ lineItems, shippingCostDkk })
-
   try {
+    const lineItems = await buildVerifiedLineItems(items)
+    if (!lineItems) {
+      return { ok: false, error: 'unavailable_products' }
+    }
+
+    const shippingCostDkk = 0
+    const { subtotalDkk, totalDkk } = computeOrderTotals({ lineItems, shippingCostDkk })
+
     const payload = await getPayloadClient()
     const order = await payload.create({
       collection: 'orders',
