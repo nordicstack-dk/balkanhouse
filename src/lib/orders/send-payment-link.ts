@@ -1,7 +1,9 @@
+import { routing, type Locale } from '@/i18n/routing'
 import { ORDER_STATUS } from '@/lib/contracts'
 import { sendPaymentLink as sendPaymentLinkEmail } from '@/lib/email/send-order-email'
 import { getPaymentGateway } from '@/lib/payment'
 import { getPayloadClient } from '@/lib/payload'
+import { getServerUrl } from '@/lib/server-url'
 import type { Order } from '@/payload-types'
 
 const PAYMENT_PROVIDER = 'flatpay'
@@ -20,13 +22,18 @@ export type SendPaymentLinkResult =
       status: number
     }
 
-function getServerUrl(): string {
-  return process.env.NEXT_PUBLIC_SERVER_URL ?? 'http://localhost:3000'
+function getOrderLocale(order: Order): Locale {
+  const maybeLocale = (order as Order & { locale?: string }).locale
+  if (maybeLocale && routing.locales.includes(maybeLocale as Locale)) {
+    return maybeLocale as Locale
+  }
+  return routing.defaultLocale
 }
 
-function buildReturnUrl(orderNumber: string): string {
-  const base = getServerUrl().replace(/\/$/, '')
-  return `${base}/da/checkout/confirmation?order=${encodeURIComponent(orderNumber)}`
+function buildReturnUrl(order: Order): string {
+  const base = getServerUrl()
+  const locale = getOrderLocale(order)
+  return `${base}/${locale}/checkout/confirmation?order=${encodeURIComponent(order.orderNumber)}`
 }
 
 export async function sendPaymentLink(orderId: number | string): Promise<SendPaymentLinkResult> {
@@ -64,7 +71,7 @@ export async function sendPaymentLink(orderId: number | string): Promise<SendPay
     amountDkk: order.totalDkk,
     currency: 'DKK',
     customerEmail: order.customerEmail,
-    returnUrl: buildReturnUrl(order.orderNumber),
+    returnUrl: buildReturnUrl(order),
   })
 
   const updated = (await payload.update({
