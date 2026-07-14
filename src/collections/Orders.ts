@@ -7,6 +7,8 @@ import {
   sendPaymentConfirmed,
 } from '@/lib/email/send-order-email'
 import { generateOrderNumber } from '@/lib/orders/order-number'
+import { orderHasAdminAdjustments, syncAdminAdjustments } from '@/lib/orders/admin-adjustments'
+import { syncOrderTotalsData } from '@/lib/orders/order-totals'
 import { sendPaymentLinkHandler } from '@/collections/endpoints/send-payment-link'
 import type { Order } from '@/payload-types'
 
@@ -164,6 +166,33 @@ export const Orders: CollectionConfig = {
                   required: true,
                   min: 0,
                 },
+                {
+                  name: 'originalQuantity',
+                  type: 'number',
+                  min: 1,
+                  admin: {
+                    readOnly: true,
+                    description: 'Customer-ordered quantity before admin adjustment',
+                  },
+                },
+                {
+                  name: 'originalUnitPriceDkk',
+                  type: 'number',
+                  min: 0,
+                  admin: {
+                    readOnly: true,
+                    description: 'Customer-ordered unit price before admin adjustment',
+                  },
+                },
+                {
+                  name: 'adminAdjusted',
+                  type: 'checkbox',
+                  defaultValue: false,
+                  admin: {
+                    readOnly: true,
+                    description: 'Set when quantity, price, or product was changed by admin',
+                  },
+                },
               ],
             },
           ],
@@ -266,6 +295,16 @@ export const Orders: CollectionConfig = {
       },
     },
     {
+      name: 'hasAdminAdjustments',
+      type: 'checkbox',
+      defaultValue: false,
+      admin: {
+        readOnly: true,
+        position: 'sidebar',
+        description: 'True when line items were modified after the order was placed',
+      },
+    },
+    {
       name: 'notes',
       type: 'textarea',
       admin: {
@@ -275,9 +314,31 @@ export const Orders: CollectionConfig = {
   ],
   hooks: {
     beforeChange: [
-      ({ data, operation }) => {
+      ({ data, operation, originalDoc }) => {
         if (operation === 'create' && data && !data.orderNumber) {
           data.orderNumber = generateOrderNumber()
+        }
+
+        if (!data) {
+          return data
+        }
+
+        if (operation === 'update' && data.lineItems && originalDoc?.lineItems) {
+          data.lineItems = syncAdminAdjustments(
+            data.lineItems,
+            originalDoc.lineItems,
+            operation,
+          ) as typeof data.lineItems
+          data.hasAdminAdjustments = orderHasAdminAdjustments(data.lineItems)
+        }
+
+        const shouldRecalculateTotals =
+          data.lineItems ||
+          data.shippingCostDkk !== undefined ||
+          data.discountDkk !== undefined
+
+        if (shouldRecalculateTotals && (data.lineItems || originalDoc?.lineItems)) {
+          return syncOrderTotalsData(data, originalDoc as Order | undefined)
         }
 
         return data

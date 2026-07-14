@@ -2,6 +2,7 @@ import { routing, type Locale } from '@/i18n/routing'
 import { ORDER_STATUS } from '@/lib/contracts'
 import { sendPaymentLink as sendPaymentLinkEmail } from '@/lib/email/send-order-email'
 import { getPaymentGateway } from '@/lib/payment'
+import { computeOrderTotals } from '@/lib/orders/order-totals'
 import { getPayloadClient } from '@/lib/payload'
 import { getServerUrl } from '@/lib/server-url'
 import type { Order } from '@/payload-types'
@@ -59,6 +60,29 @@ export async function sendPaymentLink(orderId: number | string): Promise<SendPay
 
   if (!order.customerEmail?.trim()) {
     return { ok: false, error: 'Order is missing customer email', status: 400 }
+  }
+
+  const totals = computeOrderTotals({
+    lineItems: order.lineItems,
+    shippingCostDkk: order.shippingCostDkk,
+    discountDkk: order.discountDkk,
+  })
+
+  const totalsOutOfSync =
+    totals.subtotalDkk !== order.subtotalDkk ||
+    totals.totalDkk !== order.totalDkk ||
+    order.lineItems.some((item, index) => item.lineTotalDkk !== totals.lineItems[index]?.lineTotalDkk)
+
+  if (totalsOutOfSync) {
+    order = (await payload.update({
+      collection: 'orders',
+      id: order.id,
+      data: {
+        lineItems: totals.lineItems as Order['lineItems'],
+        subtotalDkk: totals.subtotalDkk,
+        totalDkk: totals.totalDkk,
+      },
+    })) as Order
   }
 
   if (order.totalDkk <= 0) {

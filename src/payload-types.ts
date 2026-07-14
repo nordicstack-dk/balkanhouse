@@ -330,6 +330,18 @@ export interface Order {
     unitPriceDkk: number;
     quantity: number;
     lineTotalDkk: number;
+    /**
+     * Customer-ordered quantity before admin adjustment
+     */
+    originalQuantity?: number | null;
+    /**
+     * Customer-ordered unit price before admin adjustment
+     */
+    originalUnitPriceDkk?: number | null;
+    /**
+     * Set when quantity, price, or product was changed by admin
+     */
+    adminAdjusted?: boolean | null;
     id?: string | null;
   }[];
   shippingMethod?: string | null;
@@ -342,6 +354,10 @@ export interface Order {
   shippingCostDkk?: number | null;
   discountDkk?: number | null;
   totalDkk: number;
+  /**
+   * True when line items were modified after the order was placed
+   */
+  hasAdminAdjustments?: boolean | null;
   /**
    * Internal notes (not shown to customer)
    */
@@ -620,6 +636,9 @@ export interface OrdersSelect<T extends boolean = true> {
         unitPriceDkk?: T;
         quantity?: T;
         lineTotalDkk?: T;
+        originalQuantity?: T;
+        originalUnitPriceDkk?: T;
+        adminAdjusted?: T;
         id?: T;
       };
   shippingMethod?: T;
@@ -632,6 +651,7 @@ export interface OrdersSelect<T extends boolean = true> {
   shippingCostDkk?: T;
   discountDkk?: T;
   totalDkk?: T;
+  hasAdminAdjustments?: T;
   notes?: T;
   updatedAt?: T;
   createdAt?: T;

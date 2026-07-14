@@ -1,3 +1,4 @@
+import { computeOrderTotals } from '@/lib/orders/order-totals'
 import { formatPriceDkk } from '@/lib/pricing'
 import type { Order } from '@/payload-types'
 
@@ -13,13 +14,124 @@ function unitLabel(unit: OrderLineItem['unit']): string {
   return unit === 'kg' ? 'kg' : 'buc'
 }
 
+function orderTotalDkk(order: Order): number {
+  return computeOrderTotals({
+    lineItems: order.lineItems,
+    shippingCostDkk: order.shippingCostDkk,
+    discountDkk: order.discountDkk,
+  }).totalDkk
+}
+
+function normalizedLineItems(order: Order) {
+  return computeOrderTotals({
+    lineItems: order.lineItems,
+    shippingCostDkk: order.shippingCostDkk,
+    discountDkk: order.discountDkk,
+  }).lineItems
+}
+
+type LineItemForEmail = Pick<
+  OrderLineItem,
+  | 'unit'
+  | 'quantity'
+  | 'unitPriceDkk'
+  | 'lineTotalDkk'
+  | 'productName'
+  | 'adminAdjusted'
+  | 'originalQuantity'
+  | 'originalUnitPriceDkk'
+>
+
+function isLineAdjusted(item: LineItemForEmail): boolean {
+  if (item.adminAdjusted) {
+    return true
+  }
+
+  if (item.originalQuantity != null && item.originalQuantity !== item.quantity) {
+    return true
+  }
+
+  if (item.originalUnitPriceDkk != null && item.originalUnitPriceDkk !== item.unitPriceDkk) {
+    return true
+  }
+
+  return false
+}
+
+function adjustmentBadge(): string {
+  return `
+    <span style="display:inline-block;margin-top:4px;padding:2px 8px;background:#fff3e0;color:#b45309;border-radius:4px;font-size:11px;font-weight:600;">
+      Ajustat de magazin
+    </span>
+  `.trim()
+}
+
+function quantityCell(item: LineItemForEmail): string {
+  const unit = unitLabel(item.unit)
+  const current = `${item.quantity} ${unit}`
+
+  if (!isLineAdjusted(item)) {
+    return current
+  }
+
+  const originalQty = item.originalQuantity
+  const hasQtyChange = originalQty != null && originalQty !== item.quantity
+
+  if (!hasQtyChange) {
+    return `${current}<br>${adjustmentBadge()}`
+  }
+
+  return `
+    <span style="text-decoration:line-through;color:#9a8a82;">${originalQty} ${unit}</span><br>
+    ${current}<br>
+    ${adjustmentBadge()}
+  `.trim()
+}
+
+function unitPriceCell(item: LineItemForEmail): string {
+  const current = formatPriceDkk(item.unitPriceDkk)
+
+  if (!isLineAdjusted(item)) {
+    return current
+  }
+
+  const originalPrice = item.originalUnitPriceDkk
+  const hasPriceChange = originalPrice != null && originalPrice !== item.unitPriceDkk
+
+  if (!hasPriceChange) {
+    return current
+  }
+
+  return `
+    <span style="text-decoration:line-through;color:#9a8a82;">${escapeHtml(formatPriceDkk(originalPrice))}</span><br>
+    ${escapeHtml(current)}
+  `.trim()
+}
+
+function adminAdjustmentsNotice(order: Order): string {
+  const hasAdjustments =
+    order.hasAdminAdjustments === true ||
+    normalizedLineItems(order).some((item) => isLineAdjusted(item as LineItemForEmail))
+
+  if (!hasAdjustments) {
+    return ''
+  }
+
+  return `
+    <p style="margin:16px 0 0;padding:12px 16px;background-color:#fff8e6;border-left:4px solid #d97706;border-radius:8px;color:#5c4a42;line-height:1.6;font-size:14px;">
+      Cantitate/preț actualizat de magazin pentru unele produse din comandă.
+    </p>
+  `.trim()
+}
+
 function lineItemsTable(order: Order): string {
-  const rows = order.lineItems
+  const rows = normalizedLineItems(order)
     .map(
       (item) => `
         <tr>
-          <td style="padding:8px 0;border-bottom:1px solid #e8dcc8;">${escapeHtml(item.productName)}</td>
-          <td style="padding:8px 0;border-bottom:1px solid #e8dcc8;text-align:center;">${item.quantity} ${unitLabel(item.unit)}</td>
+          <td style="padding:8px 0;border-bottom:1px solid #e8dcc8;">${escapeHtml(item.productName as string)}</td>
+          <td style="padding:8px 0;border-bottom:1px solid #e8dcc8;text-align:center;line-height:1.5;">${quantityCell(item as LineItemForEmail)}</td>
+          <td style="padding:8px 0;border-bottom:1px solid #e8dcc8;text-align:right;line-height:1.5;">${unitPriceCell(item as LineItemForEmail)}</td>
           <td style="padding:8px 0;border-bottom:1px solid #e8dcc8;text-align:right;">${escapeHtml(formatPriceDkk(item.lineTotalDkk))}</td>
         </tr>
       `,
@@ -27,16 +139,18 @@ function lineItemsTable(order: Order): string {
     .join('')
 
   return `
+    ${adminAdjustmentsNotice(order)}
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:20px 0;font-size:14px;">
       <tr>
         <th align="left" style="padding:8px 0;border-bottom:2px solid #6b1d2a;font-size:12px;text-transform:uppercase;color:#5c4a42;">Produs</th>
         <th align="center" style="padding:8px 0;border-bottom:2px solid #6b1d2a;font-size:12px;text-transform:uppercase;color:#5c4a42;">Cant.</th>
+        <th align="right" style="padding:8px 0;border-bottom:2px solid #6b1d2a;font-size:12px;text-transform:uppercase;color:#5c4a42;">Preț</th>
         <th align="right" style="padding:8px 0;border-bottom:2px solid #6b1d2a;font-size:12px;text-transform:uppercase;color:#5c4a42;">Total</th>
       </tr>
       ${rows}
       <tr>
-        <td colspan="2" style="padding:12px 0 0;font-weight:600;">Total comandă</td>
-        <td style="padding:12px 0 0;text-align:right;font-weight:700;color:#6b1d2a;">${escapeHtml(formatPriceDkk(order.totalDkk))}</td>
+        <td colspan="3" style="padding:12px 0 0;font-weight:600;">Total comandă</td>
+        <td style="padding:12px 0 0;text-align:right;font-weight:700;color:#6b1d2a;">${escapeHtml(formatPriceDkk(orderTotalDkk(order)))}</td>
       </tr>
     </table>
   `.trim()
@@ -79,7 +193,7 @@ export function paymentLinkEmail(order: Order, paymentLinkUrl: string): { subjec
     </p>
     <p style="margin:0 0 4px;font-size:13px;color:#5c4a42;">Număr comandă</p>
     ${orderReference(order)}
-    <p style="margin:0 0 8px;font-size:18px;font-weight:700;color:#6b1d2a;">${escapeHtml(formatPriceDkk(order.totalDkk))}</p>
+    ${lineItemsTable(order)}
     ${emailButton(paymentLinkUrl, 'Plătește acum')}
     <p style="margin:24px 0 0;color:#5c4a42;line-height:1.6;font-size:13px;">
       Dacă butonul nu funcționează, copiază acest link în browser:<br>

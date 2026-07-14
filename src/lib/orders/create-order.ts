@@ -4,6 +4,7 @@ import { sendOrderReceived } from '@/lib/email/send-order-email'
 import { applyPromo } from '@/lib/pricing'
 import { getPayloadClient } from '@/lib/payload'
 import { generateOrderNumber } from '@/lib/orders/order-number'
+import { computeLineTotalDkk, computeOrderTotals } from '@/lib/orders/order-totals'
 import type { Order } from '@/payload-types'
 
 export type CheckoutCustomerInput = {
@@ -25,7 +26,6 @@ export type CreateOrderResult =
 
 function lineItemFromCart(item: CartItem) {
   const unitPriceDkk = applyPromo(item.priceDkk, item.promoPercent)
-  const lineTotalDkk = Math.round(unitPriceDkk * item.quantity * 100) / 100
 
   return {
     product: item.productId,
@@ -34,7 +34,7 @@ function lineItemFromCart(item: CartItem) {
     unit: item.unit,
     unitPriceDkk,
     quantity: item.quantity,
-    lineTotalDkk,
+    lineTotalDkk: computeLineTotalDkk(unitPriceDkk, item.quantity),
   }
 }
 
@@ -59,9 +59,8 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
   }
 
   const lineItems = items.map(lineItemFromCart)
-  const subtotalDkk = lineItems.reduce((sum, line) => sum + line.lineTotalDkk, 0)
   const shippingCostDkk = 0
-  const totalDkk = subtotalDkk + shippingCostDkk
+  const { subtotalDkk, totalDkk } = computeOrderTotals({ lineItems, shippingCostDkk })
 
   try {
     const payload = await getPayloadClient()
