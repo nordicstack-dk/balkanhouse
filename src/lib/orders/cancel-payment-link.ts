@@ -3,6 +3,43 @@ import { getPaymentGateway } from '@/lib/payment'
 import { getPayloadClient } from '@/lib/payload'
 import type { Order } from '@/payload-types'
 
+export type CancelOrderPaymentSessionResult =
+  | {
+      ok: true
+      sessionCancelled: boolean
+      sessionNotFound: boolean
+    }
+  | {
+      ok: false
+      error: string
+    }
+
+/**
+ * Cancel the Frisbii checkout session for an order when paymentReference is set.
+ * A 404 from the gateway is treated as already expired/deleted.
+ */
+export async function cancelOrderPaymentSession(
+  order: Order,
+): Promise<CancelOrderPaymentSessionResult> {
+  const sessionId = order.paymentReference?.trim()
+  if (!sessionId) {
+    return { ok: true, sessionCancelled: false, sessionNotFound: false }
+  }
+
+  const gateway = getPaymentGateway()
+  const cancelResult = await gateway.cancelPaymentSession(sessionId)
+
+  if (cancelResult.ok) {
+    return { ok: true, sessionCancelled: true, sessionNotFound: false }
+  }
+
+  if (cancelResult.notFound) {
+    return { ok: true, sessionCancelled: false, sessionNotFound: true }
+  }
+
+  return { ok: false, error: cancelResult.error }
+}
+
 export type CancelPaymentLinkResult =
   | {
       ok: true
@@ -47,24 +84,12 @@ export async function cancelPaymentLink(
     }
   }
 
-  let sessionCancelled = false
-  let sessionNotFound = false
-
-  const sessionId = order.paymentReference?.trim()
-  if (sessionId) {
-    const gateway = getPaymentGateway()
-    const cancelResult = await gateway.cancelPaymentSession(sessionId)
-
-    if (cancelResult.ok) {
-      sessionCancelled = true
-    } else if (cancelResult.notFound) {
-      sessionNotFound = true
-    } else {
-      return {
-        ok: false,
-        error: cancelResult.error,
-        status: 502,
-      }
+  const sessionResult = await cancelOrderPaymentSession(order)
+  if (!sessionResult.ok) {
+    return {
+      ok: false,
+      error: sessionResult.error,
+      status: 502,
     }
   }
 
@@ -75,13 +100,14 @@ export async function cancelPaymentLink(
       status: ORDER_STATUS.AWAITING_CONFIRMATION,
       paymentLinkUrl: null,
       paymentReference: null,
+      paymentLinkSentAt: null,
     },
   })) as Order
 
   return {
     ok: true,
     order: updated,
-    sessionCancelled,
-    sessionNotFound,
+    sessionCancelled: sessionResult.sessionCancelled,
+    sessionNotFound: sessionResult.sessionNotFound,
   }
 }

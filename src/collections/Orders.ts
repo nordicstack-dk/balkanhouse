@@ -334,6 +334,17 @@ export const Orders: CollectionConfig = {
               },
             },
             {
+              name: 'paymentLinkSentAt',
+              type: 'date',
+              admin: {
+                readOnly: true,
+                description: 'When the payment link was last sent to the customer',
+                date: {
+                  pickerAppearance: 'dayAndTime',
+                },
+              },
+            },
+            {
               name: 'paidAt',
               type: 'date',
               admin: {

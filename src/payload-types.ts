@@ -342,6 +342,10 @@ export interface Order {
   paymentProvider?: string | null;
   paymentReference?: string | null;
   paymentLinkUrl?: string | null;
+  /**
+   * When the payment link was last sent to the customer
+   */
+  paymentLinkSentAt?: string | null;
   paidAt?: string | null;
   subtotalDkk: number;
   shippingCostDkk?: number | null;
@@ -600,6 +604,7 @@ export interface OrdersSelect<T extends boolean = true> {
   paymentProvider?: T;
   paymentReference?: T;
   paymentLinkUrl?: T;
+  paymentLinkSentAt?: T;
   paidAt?: T;
   subtotalDkk?: T;
   shippingCostDkk?: T;

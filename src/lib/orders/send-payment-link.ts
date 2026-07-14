@@ -106,6 +106,7 @@ export async function sendPaymentLink(orderId: number | string): Promise<SendPay
       paymentProvider: PAYMENT_PROVIDER,
       paymentReference,
       paymentLinkUrl,
+      paymentLinkSentAt: new Date().toISOString(),
     },
   })) as Order
 
