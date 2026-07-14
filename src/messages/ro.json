@@ -57,9 +57,34 @@
   },
   "checkout": {
     "title": "Finalizare comandă",
-    "stubTitle": "Comanda ta a fost înregistrată",
-    "stubMessage": "Îți vom trimite un link de plată după confirmarea comenzii. (Faza 3 — în curând)",
-    "backToShop": "Înapoi la magazin"
+    "loading": "Se încarcă...",
+    "emptyCart": "Coșul este gol. Adaugă produse înainte de a trimite comanda.",
+    "backToCart": "Înapoi la coș",
+    "contactDetails": "Date de contact",
+    "firstName": "Prenume",
+    "lastName": "Nume",
+    "email": "Email",
+    "phone": "Telefon",
+    "pickupNotes": "Note pentru ridicare",
+    "pickupNotesPlaceholder": "Ex: prefer o ridicare după-amiază",
+    "pickupInfo": "Ridicarea se face de la magazin. Vei primi un link de plată după confirmarea comenzii.",
+    "orderSummary": "Rezumat comandă",
+    "subtotal": "Subtotal",
+    "paymentLater": "Plata se face după confirmarea comenzii de către magazin.",
+    "submitOrder": "Trimite comanda",
+    "submitting": "Se trimite...",
+    "confirmationTitle": "Comanda ta a fost înregistrată",
+    "confirmationMessage": "Îți vom trimite un link de plată după ce confirmăm disponibilitatea produselor.",
+    "paymentConfirmedTitle": "Plata a fost primită",
+    "paymentConfirmedMessage": "Mulțumim! Plata a fost efectuată cu succes, iar comanda ta este acum confirmată.",
+    "orderNumber": "Număr comandă",
+    "backToShop": "Înapoi la magazin",
+    "errors": {
+      "empty_cart": "Coșul este gol.",
+      "missing_fields": "Completează toate câmpurile obligatorii.",
+      "invalid_email": "Adresa de email nu este validă.",
+      "server_error": "A apărut o eroare. Încearcă din nou."
+    }
   },
   "about": {
     "title": "Despre noi",

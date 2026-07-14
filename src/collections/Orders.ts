@@ -1,6 +1,14 @@
 import type { CollectionConfig } from 'payload'
 
 import { ORDER_STATUS, ORDER_STATUS_OPTIONS, UNIT_OPTIONS } from '@/lib/contracts'
+import {
+  sendOrderCancelled,
+  sendOrderShipped,
+  sendPaymentConfirmed,
+} from '@/lib/email/send-order-email'
+import { generateOrderNumber } from '@/lib/orders/order-number'
+import { sendPaymentLinkHandler } from '@/collections/endpoints/send-payment-link'
+import type { Order } from '@/payload-types'
 
 export const Orders: CollectionConfig = {
   slug: 'orders',
@@ -8,6 +16,13 @@ export const Orders: CollectionConfig = {
     useAsTitle: 'orderNumber',
     defaultColumns: ['orderNumber', 'status', 'customerEmail', 'totalDkk', 'createdAt'],
   },
+  endpoints: [
+    {
+      path: '/:id/send-payment-link',
+      method: 'post',
+      handler: sendPaymentLinkHandler,
+    },
+  ],
   fields: [
     {
       name: 'orderNumber',
@@ -66,29 +81,35 @@ export const Orders: CollectionConfig = {
             {
               name: 'customerAddress',
               type: 'group',
+              admin: {
+                description: 'Optional for pickup orders',
+              },
               fields: [
                 {
                   name: 'street',
                   type: 'text',
-                  required: true,
                 },
                 {
                   name: 'city',
                   type: 'text',
-                  required: true,
                 },
                 {
                   name: 'postalCode',
                   type: 'text',
-                  required: true,
                 },
                 {
                   name: 'country',
                   type: 'text',
-                  required: true,
                   defaultValue: 'DK',
                 },
               ],
+            },
+            {
+              name: 'pickupNotes',
+              type: 'textarea',
+              admin: {
+                description: 'Customer notes for pickup (e.g. preferred time)',
+              },
             },
           ],
         },
@@ -153,6 +174,7 @@ export const Orders: CollectionConfig = {
             {
               name: 'shippingMethod',
               type: 'text',
+              defaultValue: 'pickup',
             },
             {
               name: 'trackingNumber',
@@ -163,6 +185,15 @@ export const Orders: CollectionConfig = {
         {
           label: 'Payment',
           fields: [
+            {
+              name: 'sendPaymentLinkAction',
+              type: 'ui',
+              admin: {
+                components: {
+                  Field: '@/components/admin/SendPaymentLinkButton#SendPaymentLinkButton',
+                },
+              },
+            },
             {
               name: 'paymentProvider',
               type: 'text',
@@ -246,12 +277,39 @@ export const Orders: CollectionConfig = {
     beforeChange: [
       ({ data, operation }) => {
         if (operation === 'create' && data && !data.orderNumber) {
-          const timestamp = Date.now().toString(36).toUpperCase()
-          const random = Math.random().toString(36).slice(2, 6).toUpperCase()
-          data.orderNumber = `BH-${timestamp}-${random}`
+          data.orderNumber = generateOrderNumber()
         }
 
         return data
+      },
+    ],
+    afterChange: [
+      async ({ doc, previousDoc, operation }) => {
+        if (operation !== 'update' || !previousDoc) {
+          return
+        }
+
+        const order = doc as Order
+        const prevStatus = previousDoc.status
+        const nextStatus = order.status
+
+        if (prevStatus === nextStatus) {
+          return
+        }
+
+        const send = (fn: (order: Order) => Promise<unknown>) => {
+          void fn(order).catch((err) => {
+            console.error('[email] status notification failed:', err)
+          })
+        }
+
+        if (nextStatus === ORDER_STATUS.PAID) {
+          send(sendPaymentConfirmed)
+        } else if (nextStatus === ORDER_STATUS.SHIPPED) {
+          send(sendOrderShipped)
+        } else if (nextStatus === ORDER_STATUS.CANCELLED) {
+          send(sendOrderCancelled)
+        }
       },
     ],
   },

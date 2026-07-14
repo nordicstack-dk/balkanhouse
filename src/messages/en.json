@@ -57,9 +57,34 @@
   },
   "checkout": {
     "title": "Checkout",
-    "stubTitle": "Your order has been registered",
-    "stubMessage": "You will receive a payment link after confirmation. (Phase 3 — coming soon)",
-    "backToShop": "Back to shop"
+    "loading": "Loading...",
+    "emptyCart": "Your cart is empty. Add products before submitting an order.",
+    "backToCart": "Back to cart",
+    "contactDetails": "Contact details",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "email": "Email",
+    "phone": "Phone",
+    "pickupNotes": "Pickup notes",
+    "pickupNotesPlaceholder": "E.g. prefer afternoon pickup",
+    "pickupInfo": "Pickup is at the store. You will receive a payment link after we confirm your order.",
+    "orderSummary": "Order summary",
+    "subtotal": "Subtotal",
+    "paymentLater": "Payment is collected after the store confirms your order.",
+    "submitOrder": "Submit order",
+    "submitting": "Submitting...",
+    "confirmationTitle": "Your order has been registered",
+    "confirmationMessage": "We will send you a payment link after we confirm product availability.",
+    "paymentConfirmedTitle": "Payment received",
+    "paymentConfirmedMessage": "Thank you! Your payment was successful and your order is now confirmed.",
+    "orderNumber": "Order number",
+    "backToShop": "Back to shop",
+    "errors": {
+      "empty_cart": "Your cart is empty.",
+      "missing_fields": "Please fill in all required fields.",
+      "invalid_email": "The email address is not valid.",
+      "server_error": "Something went wrong. Please try again."
+    }
   },
   "about": {
     "title": "About us",

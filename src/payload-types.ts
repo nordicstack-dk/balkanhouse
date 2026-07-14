@@ -306,12 +306,19 @@ export interface Order {
   customerLastName: string;
   customerPhone: string;
   customerEmail: string;
-  customerAddress: {
-    street: string;
-    city: string;
-    postalCode: string;
-    country: string;
+  /**
+   * Optional for pickup orders
+   */
+  customerAddress?: {
+    street?: string | null;
+    city?: string | null;
+    postalCode?: string | null;
+    country?: string | null;
   };
+  /**
+   * Customer notes for pickup (e.g. preferred time)
+   */
+  pickupNotes?: string | null;
   lineItems: {
     /**
      * Reference only — prices are snapshotted below
@@ -602,6 +609,7 @@ export interface OrdersSelect<T extends boolean = true> {
         postalCode?: T;
         country?: T;
       };
+  pickupNotes?: T;
   lineItems?:
     | T
     | {

@@ -57,9 +57,34 @@
   },
   "checkout": {
     "title": "Checkout",
-    "stubTitle": "Din ordre er registreret",
-    "stubMessage": "Du modtager et betalingslink efter bekræftelse. (Fase 3 — kommer snart)",
-    "backToShop": "Tilbage til butikken"
+    "loading": "Indlæser...",
+    "emptyCart": "Kurven er tom. Tilføj produkter, før du sender ordren.",
+    "backToCart": "Tilbage til kurv",
+    "contactDetails": "Kontaktoplysninger",
+    "firstName": "Fornavn",
+    "lastName": "Efternavn",
+    "email": "Email",
+    "phone": "Telefon",
+    "pickupNotes": "Afhentningsnoter",
+    "pickupNotesPlaceholder": "F.eks. foretrækker afhentning om eftermiddagen",
+    "pickupInfo": "Afhentning sker i butikken. Du modtager et betalingslink, når vi har bekræftet ordren.",
+    "orderSummary": "Ordreoversigt",
+    "subtotal": "Subtotal",
+    "paymentLater": "Betaling sker, når butikken har bekræftet ordren.",
+    "submitOrder": "Send ordre",
+    "submitting": "Sender...",
+    "confirmationTitle": "Din ordre er registreret",
+    "confirmationMessage": "Du modtager et betalingslink, når vi har bekræftet produkttilgængelighed.",
+    "paymentConfirmedTitle": "Betaling modtaget",
+    "paymentConfirmedMessage": "Tak! Din betaling er gennemført, og din ordre er nu bekræftet.",
+    "orderNumber": "Ordrenummer",
+    "backToShop": "Tilbage til butikken",
+    "errors": {
+      "empty_cart": "Kurven er tom.",
+      "missing_fields": "Udfyld alle obligatoriske felter.",
+      "invalid_email": "E-mailadressen er ikke gyldig.",
+      "server_error": "Der opstod en fejl. Prøv igen."
+    }
   },
   "about": {
     "title": "Om os",
