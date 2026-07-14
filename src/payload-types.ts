@@ -64,7 +64,6 @@ export type SupportedTimezones =
 export interface Config {
   auth: {
     users: UserAuthOperations;
-    'payload-mcp-api-keys': PayloadMcpApiKeyAuthOperations;
   };
   blocks: {};
   collections: {
@@ -75,7 +74,6 @@ export interface Config {
     promotions: Promotion;
     orders: Order;
     customers: Customer;
-    'payload-mcp-api-keys': PayloadMcpApiKey;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -90,7 +88,6 @@ export interface Config {
     promotions: PromotionsSelect<false> | PromotionsSelect<true>;
     orders: OrdersSelect<false> | OrdersSelect<true>;
     customers: CustomersSelect<false> | CustomersSelect<true>;
-    'payload-mcp-api-keys': PayloadMcpApiKeysSelect<false> | PayloadMcpApiKeysSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -106,31 +103,13 @@ export interface Config {
   widgets: {
     collections: CollectionsWidget;
   };
-  user: User | PayloadMcpApiKey;
+  user: User;
   jobs: {
     tasks: unknown;
     workflows: unknown;
   };
 }
 export interface UserAuthOperations {
-  forgotPassword: {
-    email: string;
-    password: string;
-  };
-  login: {
-    email: string;
-    password: string;
-  };
-  registerFirstUser: {
-    email: string;
-    password: string;
-  };
-  unlock: {
-    email: string;
-    password: string;
-  };
-}
-export interface PayloadMcpApiKeyAuthOperations {
   forgotPassword: {
     email: string;
     password: string;
@@ -210,6 +189,10 @@ export interface Category {
  */
 export interface Product {
   id: number;
+  /**
+   * Auto-generated "SKU — Title" for admin search and labels
+   */
+  adminLabel?: string | null;
   sku: string;
   title: string;
   /**
@@ -297,6 +280,9 @@ export interface Promotion {
 export interface Order {
   id: number;
   orderNumber: string;
+  /**
+   * Paid or shipped orders can be set to Cancelled after you issue a manual refund in Frisbii (Payment tab → Cancel order, or change status here and save).
+   */
   status: 'awaiting_confirmation' | 'awaiting_payment' | 'paid' | 'shipped' | 'cancelled';
   /**
    * Optional link to a saved customer record
@@ -306,8 +292,38 @@ export interface Order {
   customerLastName: string;
   customerPhone: string;
   customerEmail: string;
+  lineItems: {
+    /**
+     * Reference only — prices are snapshotted below
+     */
+    product?: (number | null) | Product;
+    sku: string;
+    productName: string;
+    unit: 'piece' | 'kg';
+    unitPriceDkk: number;
+    quantity: number;
+    /**
+     * Auto-calculated from unit price × quantity; editable for custom totals
+     */
+    lineTotalDkk: number;
+    /**
+     * Customer-ordered quantity before admin adjustment
+     */
+    originalQuantity?: number | null;
+    /**
+     * Customer-ordered unit price before admin adjustment
+     */
+    originalUnitPriceDkk?: number | null;
+    lineTotalOverridden?: boolean | null;
+    /**
+     * Set when quantity, price, line total, or product was changed by admin
+     */
+    adminAdjusted?: boolean | null;
+    id?: string | null;
+  }[];
+  shippingMethod?: ('pickup' | 'delivery') | null;
   /**
-   * Optional for pickup orders
+   * Customer delivery address
    */
   customerAddress?: {
     street?: string | null;
@@ -319,32 +335,9 @@ export interface Order {
    * Customer notes for pickup (e.g. preferred time)
    */
   pickupNotes?: string | null;
-  lineItems: {
-    /**
-     * Reference only — prices are snapshotted below
-     */
-    product?: (number | null) | Product;
-    sku: string;
-    productName: string;
-    unit: 'piece' | 'kg';
-    unitPriceDkk: number;
-    quantity: number;
-    lineTotalDkk: number;
-    /**
-     * Customer-ordered quantity before admin adjustment
-     */
-    originalQuantity?: number | null;
-    /**
-     * Customer-ordered unit price before admin adjustment
-     */
-    originalUnitPriceDkk?: number | null;
-    /**
-     * Set when quantity, price, or product was changed by admin
-     */
-    adminAdjusted?: boolean | null;
-    id?: string | null;
-  }[];
-  shippingMethod?: string | null;
+  /**
+   * Optional — add when the order is shipped
+   */
   trackingNumber?: string | null;
   paymentProvider?: string | null;
   paymentReference?: string | null;
@@ -359,7 +352,7 @@ export interface Order {
    */
   hasAdminAdjustments?: boolean | null;
   /**
-   * Internal notes (not shown to customer)
+   * Internal notes (not shown to customer). When cancelling a paid order, include the Frisbii refund reference here.
    */
   notes?: string | null;
   updatedAt: string;
@@ -385,33 +378,6 @@ export interface Customer {
   };
   updatedAt: string;
   createdAt: string;
-}
-/**
- * API keys control which collections, resources, tools, and prompts MCP clients can access
- *
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "payload-mcp-api-keys".
- */
-export interface PayloadMcpApiKey {
-  id: number;
-  /**
-   * The user that the API key is associated with.
-   */
-  user: number | User;
-  /**
-   * A useful label for the API key.
-   */
-  label?: string | null;
-  /**
-   * The purpose of the API key.
-   */
-  description?: string | null;
-  updatedAt: string;
-  createdAt: string;
-  enableAPIKey?: boolean | null;
-  apiKey?: string | null;
-  apiKeyIndex?: string | null;
-  collection: 'payload-mcp-api-keys';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -464,21 +430,12 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'customers';
         value: number | Customer;
-      } | null)
-    | ({
-        relationTo: 'payload-mcp-api-keys';
-        value: number | PayloadMcpApiKey;
       } | null);
   globalSlug?: string | null;
-  user:
-    | {
-        relationTo: 'users';
-        value: number | User;
-      }
-    | {
-        relationTo: 'payload-mcp-api-keys';
-        value: number | PayloadMcpApiKey;
-      };
+  user: {
+    relationTo: 'users';
+    value: number | User;
+  };
   updatedAt: string;
   createdAt: string;
 }
@@ -488,15 +445,10 @@ export interface PayloadLockedDocument {
  */
 export interface PayloadPreference {
   id: number;
-  user:
-    | {
-        relationTo: 'users';
-        value: number | User;
-      }
-    | {
-        relationTo: 'payload-mcp-api-keys';
-        value: number | PayloadMcpApiKey;
-      };
+  user: {
+    relationTo: 'users';
+    value: number | User;
+  };
   key?: string | null;
   value?:
     | {
@@ -577,6 +529,7 @@ export interface CategoriesSelect<T extends boolean = true> {
  * via the `definition` "products_select".
  */
 export interface ProductsSelect<T extends boolean = true> {
+  adminLabel?: T;
   sku?: T;
   title?: T;
   priceDkk?: T;
@@ -617,15 +570,6 @@ export interface OrdersSelect<T extends boolean = true> {
   customerLastName?: T;
   customerPhone?: T;
   customerEmail?: T;
-  customerAddress?:
-    | T
-    | {
-        street?: T;
-        city?: T;
-        postalCode?: T;
-        country?: T;
-      };
-  pickupNotes?: T;
   lineItems?:
     | T
     | {
@@ -638,10 +582,20 @@ export interface OrdersSelect<T extends boolean = true> {
         lineTotalDkk?: T;
         originalQuantity?: T;
         originalUnitPriceDkk?: T;
+        lineTotalOverridden?: T;
         adminAdjusted?: T;
         id?: T;
       };
   shippingMethod?: T;
+  customerAddress?:
+    | T
+    | {
+        street?: T;
+        city?: T;
+        postalCode?: T;
+        country?: T;
+      };
+  pickupNotes?: T;
   trackingNumber?: T;
   paymentProvider?: T;
   paymentReference?: T;
@@ -675,20 +629,6 @@ export interface CustomersSelect<T extends boolean = true> {
       };
   updatedAt?: T;
   createdAt?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "payload-mcp-api-keys_select".
- */
-export interface PayloadMcpApiKeysSelect<T extends boolean = true> {
-  user?: T;
-  label?: T;
-  description?: T;
-  updatedAt?: T;
-  createdAt?: T;
-  enableAPIKey?: T;
-  apiKey?: T;
-  apiKeyIndex?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

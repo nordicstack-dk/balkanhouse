@@ -1,6 +1,12 @@
 import type { CollectionConfig } from 'payload'
 
-import { ORDER_STATUS, ORDER_STATUS_OPTIONS, UNIT_OPTIONS } from '@/lib/contracts'
+import {
+  ORDER_STATUS,
+  ORDER_STATUS_OPTIONS,
+  SHIPPING_METHOD,
+  SHIPPING_METHOD_OPTIONS,
+  UNIT_OPTIONS,
+} from '@/lib/contracts'
 import {
   sendOrderCancelled,
   sendOrderShipped,
@@ -8,8 +14,14 @@ import {
 } from '@/lib/email/send-order-email'
 import { generateOrderNumber } from '@/lib/orders/order-number'
 import { orderHasAdminAdjustments, syncAdminAdjustments } from '@/lib/orders/admin-adjustments'
+import {
+  assertOrderFinancialFieldsUnchanged,
+  canUpdateOrderFinancialFields,
+  orderFinancialFieldAccess,
+} from '@/lib/orders/order-financial-lock'
 import { syncOrderTotalsData } from '@/lib/orders/order-totals'
 import { sendPaymentLinkHandler } from '@/collections/endpoints/send-payment-link'
+import { cancelPaymentLinkHandler } from '@/collections/endpoints/cancel-payment-link'
 import type { Order } from '@/payload-types'
 
 export const Orders: CollectionConfig = {
@@ -23,6 +35,11 @@ export const Orders: CollectionConfig = {
       path: '/:id/send-payment-link',
       method: 'post',
       handler: sendPaymentLinkHandler,
+    },
+    {
+      path: '/:id/cancel-payment-link',
+      method: 'post',
+      handler: cancelPaymentLinkHandler,
     },
   ],
   fields: [
@@ -44,6 +61,8 @@ export const Orders: CollectionConfig = {
       options: ORDER_STATUS_OPTIONS,
       admin: {
         position: 'sidebar',
+        description:
+          'Paid or shipped orders can be set to Cancelled after you issue a manual refund in Frisbii (Payment tab → Cancel order, or change status here and save).',
       },
     },
     {
@@ -80,39 +99,6 @@ export const Orders: CollectionConfig = {
               type: 'email',
               required: true,
             },
-            {
-              name: 'customerAddress',
-              type: 'group',
-              admin: {
-                description: 'Optional for pickup orders',
-              },
-              fields: [
-                {
-                  name: 'street',
-                  type: 'text',
-                },
-                {
-                  name: 'city',
-                  type: 'text',
-                },
-                {
-                  name: 'postalCode',
-                  type: 'text',
-                },
-                {
-                  name: 'country',
-                  type: 'text',
-                  defaultValue: 'DK',
-                },
-              ],
-            },
-            {
-              name: 'pickupNotes',
-              type: 'textarea',
-              admin: {
-                description: 'Customer notes for pickup (e.g. preferred time)',
-              },
-            },
           ],
         },
         {
@@ -123,48 +109,75 @@ export const Orders: CollectionConfig = {
               type: 'array',
               required: true,
               minRows: 1,
+              access: orderFinancialFieldAccess,
               fields: [
                 {
                   name: 'product',
                   type: 'relationship',
                   relationTo: 'products',
+                  access: orderFinancialFieldAccess,
                   admin: {
                     description: 'Reference only — prices are snapshotted below',
+                    components: {
+                      Field: '@/components/admin/OrderLineProductField#OrderLineProductField',
+                    },
                   },
                 },
                 {
                   name: 'sku',
                   type: 'text',
                   required: true,
+                  access: orderFinancialFieldAccess,
                 },
                 {
                   name: 'productName',
                   type: 'text',
                   required: true,
+                  access: orderFinancialFieldAccess,
                 },
                 {
                   name: 'unit',
                   type: 'select',
                   required: true,
                   options: UNIT_OPTIONS,
+                  access: orderFinancialFieldAccess,
                 },
                 {
                   name: 'unitPriceDkk',
                   type: 'number',
                   required: true,
                   min: 0,
+                  access: orderFinancialFieldAccess,
+                  admin: {
+                    components: {
+                      Field: '@/components/admin/order-line-item-fields/OrderLineItemFields#OrderLineUnitPriceField',
+                    },
+                  },
                 },
                 {
                   name: 'quantity',
                   type: 'number',
                   required: true,
                   min: 1,
+                  access: orderFinancialFieldAccess,
+                  admin: {
+                    components: {
+                      Field: '@/components/admin/order-line-item-fields/OrderLineItemFields#OrderLineQuantityField',
+                    },
+                  },
                 },
                 {
                   name: 'lineTotalDkk',
                   type: 'number',
                   required: true,
                   min: 0,
+                  access: orderFinancialFieldAccess,
+                  admin: {
+                    description: 'Auto-calculated from unit price × quantity; editable for custom totals',
+                    components: {
+                      Field: '@/components/admin/order-line-item-fields/OrderLineItemFields#OrderLineTotalField',
+                    },
+                  },
                 },
                 {
                   name: 'originalQuantity',
@@ -185,12 +198,21 @@ export const Orders: CollectionConfig = {
                   },
                 },
                 {
+                  name: 'lineTotalOverridden',
+                  type: 'checkbox',
+                  defaultValue: false,
+                  admin: {
+                    hidden: true,
+                  },
+                },
+                {
                   name: 'adminAdjusted',
                   type: 'checkbox',
                   defaultValue: false,
                   admin: {
                     readOnly: true,
-                    description: 'Set when quantity, price, or product was changed by admin',
+                    description:
+                      'Set when quantity, price, line total, or product was changed by admin',
                   },
                 },
               ],
@@ -202,12 +224,61 @@ export const Orders: CollectionConfig = {
           fields: [
             {
               name: 'shippingMethod',
-              type: 'text',
-              defaultValue: 'pickup',
+              type: 'select',
+              label: 'Shipping method',
+              defaultValue: SHIPPING_METHOD.PICKUP,
+              options: SHIPPING_METHOD_OPTIONS,
+            },
+            {
+              name: 'customerAddress',
+              type: 'group',
+              label: 'Delivery address',
+              admin: {
+                condition: (data) => data.shippingMethod === SHIPPING_METHOD.DELIVERY,
+                description: 'Customer delivery address',
+              },
+              fields: [
+                {
+                  name: 'street',
+                  type: 'text',
+                  label: 'Street',
+                },
+                {
+                  name: 'city',
+                  type: 'text',
+                  label: 'City',
+                },
+                {
+                  name: 'postalCode',
+                  type: 'text',
+                  label: 'Postal code',
+                },
+                {
+                  name: 'country',
+                  type: 'text',
+                  defaultValue: 'DK',
+                  admin: {
+                    hidden: true,
+                  },
+                },
+              ],
+            },
+            {
+              name: 'pickupNotes',
+              type: 'textarea',
+              label: 'Pickup notes',
+              admin: {
+                condition: (data) => data.shippingMethod === SHIPPING_METHOD.PICKUP,
+                description: 'Customer notes for pickup (e.g. preferred time)',
+              },
             },
             {
               name: 'trackingNumber',
               type: 'text',
+              label: 'Tracking number',
+              admin: {
+                description: 'Optional — add when the order is shipped',
+              },
             },
           ],
         },
@@ -220,6 +291,24 @@ export const Orders: CollectionConfig = {
               admin: {
                 components: {
                   Field: '@/components/admin/SendPaymentLinkButton#SendPaymentLinkButton',
+                },
+              },
+            },
+            {
+              name: 'cancelPaymentLinkAction',
+              type: 'ui',
+              admin: {
+                components: {
+                  Field: '@/components/admin/CancelPaymentLinkButton#CancelPaymentLinkButton',
+                },
+              },
+            },
+            {
+              name: 'cancelPaidOrderAction',
+              type: 'ui',
+              admin: {
+                components: {
+                  Field: '@/components/admin/CancelPaidOrderButton#CancelPaidOrderButton',
                 },
               },
             },
@@ -263,6 +352,7 @@ export const Orders: CollectionConfig = {
       type: 'number',
       required: true,
       min: 0,
+      access: orderFinancialFieldAccess,
       admin: {
         position: 'sidebar',
       },
@@ -272,6 +362,7 @@ export const Orders: CollectionConfig = {
       type: 'number',
       min: 0,
       defaultValue: 0,
+      access: orderFinancialFieldAccess,
       admin: {
         position: 'sidebar',
       },
@@ -281,6 +372,7 @@ export const Orders: CollectionConfig = {
       type: 'number',
       min: 0,
       defaultValue: 0,
+      access: orderFinancialFieldAccess,
       admin: {
         position: 'sidebar',
       },
@@ -290,6 +382,7 @@ export const Orders: CollectionConfig = {
       type: 'number',
       required: true,
       min: 0,
+      access: orderFinancialFieldAccess,
       admin: {
         position: 'sidebar',
       },
@@ -298,6 +391,7 @@ export const Orders: CollectionConfig = {
       name: 'hasAdminAdjustments',
       type: 'checkbox',
       defaultValue: false,
+      access: orderFinancialFieldAccess,
       admin: {
         readOnly: true,
         position: 'sidebar',
@@ -308,7 +402,8 @@ export const Orders: CollectionConfig = {
       name: 'notes',
       type: 'textarea',
       admin: {
-        description: 'Internal notes (not shown to customer)',
+        description:
+          'Internal notes (not shown to customer). When cancelling a paid order, include the Frisbii refund reference here.',
       },
     },
   ],
@@ -320,6 +415,19 @@ export const Orders: CollectionConfig = {
         }
 
         if (!data) {
+          return data
+        }
+
+        if (operation === 'update' && originalDoc) {
+          assertOrderFinancialFieldsUnchanged(data as Partial<Order>, originalDoc as Order)
+        }
+
+        const financiallyLocked =
+          operation === 'update' &&
+          originalDoc != null &&
+          !canUpdateOrderFinancialFields(originalDoc as Order)
+
+        if (financiallyLocked) {
           return data
         }
 

@@ -65,9 +65,20 @@
     "lastName": "Last name",
     "email": "Email",
     "phone": "Phone",
+    "shippingMethod": "Delivery method",
+    "shippingPickup": "Pickup in store",
+    "shippingPickupHint": "Collect your order at the store",
+    "shippingDelivery": "Home delivery",
+    "shippingDeliveryHint": "We deliver to your address",
+    "deliveryAddress": "Delivery address",
+    "street": "Street and number",
+    "city": "City",
+    "postalCode": "Postal code",
+    "country": "Country",
     "pickupNotes": "Pickup notes",
     "pickupNotesPlaceholder": "E.g. prefer afternoon pickup",
     "pickupInfo": "Pickup is at the store. You will receive a payment link after we confirm your order.",
+    "deliveryInfo": "We deliver to the address you provide. You will receive a payment link after we confirm your order.",
     "orderSummary": "Order summary",
     "subtotal": "Subtotal",
     "paymentLater": "Payment is collected after the store confirms your order.",
@@ -82,6 +93,7 @@
     "errors": {
       "empty_cart": "Your cart is empty.",
       "missing_fields": "Please fill in all required fields.",
+      "missing_address": "Please fill in the delivery address.",
       "invalid_email": "The email address is not valid.",
       "server_error": "Something went wrong. Please try again."
     }

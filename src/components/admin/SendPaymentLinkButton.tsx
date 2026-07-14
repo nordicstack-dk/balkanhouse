@@ -75,7 +75,12 @@ export function SendPaymentLinkButton() {
       <Button buttonStyle="primary" disabled={!canSend || loading} onClick={handleSend} type="button">
         {loading ? 'Creating link…' : 'Send payment link'}
       </Button>
-      {!canSend && status !== ORDER_STATUS.AWAITING_CONFIRMATION && (
+      {!canSend && status === ORDER_STATUS.AWAITING_PAYMENT && (
+        <p style={{ margin: 0, fontSize: '0.875rem', opacity: 0.75 }}>
+          Cancel the current payment link first to edit the order and send a new link.
+        </p>
+      )}
+      {!canSend && status !== ORDER_STATUS.AWAITING_CONFIRMATION && status !== ORDER_STATUS.AWAITING_PAYMENT && (
         <p style={{ margin: 0, fontSize: '0.875rem', opacity: 0.75 }}>
           Available when order status is awaiting confirmation.
         </p>

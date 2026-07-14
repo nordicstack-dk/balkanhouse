@@ -77,3 +77,15 @@ export const UNIT_OPTIONS: { label: string; value: Unit }[] = [
   { label: 'Piece', value: UNIT.PIECE },
   { label: 'Kg', value: UNIT.KG },
 ]
+
+export const SHIPPING_METHOD = {
+  PICKUP: 'pickup',
+  DELIVERY: 'delivery',
+} as const
+
+export type ShippingMethod = (typeof SHIPPING_METHOD)[keyof typeof SHIPPING_METHOD]
+
+export const SHIPPING_METHOD_OPTIONS: { label: string; value: ShippingMethod }[] = [
+  { label: 'Pickup in store', value: SHIPPING_METHOD.PICKUP },
+  { label: 'Home delivery', value: SHIPPING_METHOD.DELIVERY },
+]

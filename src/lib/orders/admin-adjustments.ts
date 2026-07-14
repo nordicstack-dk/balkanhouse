@@ -1,9 +1,13 @@
+import { computeLineTotalDkk } from '@/lib/orders/order-totals'
+
 export type OrderLineItemWithAdjustments = {
   id?: string | null
   sku?: string | null
   productName?: string | null
   unitPriceDkk?: number | null
   quantity?: number | null
+  lineTotalDkk?: number | null
+  lineTotalOverridden?: boolean | null
   originalQuantity?: number | null
   originalUnitPriceDkk?: number | null
   adminAdjusted?: boolean | null
@@ -40,11 +44,19 @@ function lineWasAdjusted(
     return true
   }
 
+  const computedLineTotal = computeLineTotalDkk(
+    current.unitPriceDkk ?? 0,
+    current.quantity ?? 0,
+  )
+
   return (
     current.quantity !== previous.quantity ||
     current.unitPriceDkk !== previous.unitPriceDkk ||
     current.sku !== previous.sku ||
-    current.productName !== previous.productName
+    current.productName !== previous.productName ||
+    current.lineTotalOverridden === true ||
+    (current.lineTotalDkk !== previous.lineTotalDkk &&
+      current.lineTotalDkk !== computedLineTotal)
   )
 }
 

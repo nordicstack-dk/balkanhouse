@@ -65,9 +65,20 @@
     "lastName": "Efternavn",
     "email": "Email",
     "phone": "Telefon",
+    "shippingMethod": "Leveringsmetode",
+    "shippingPickup": "Afhentning i butik",
+    "shippingPickupHint": "Du henter selv i butikken",
+    "shippingDelivery": "Levering til adresse",
+    "shippingDeliveryHint": "Vi leverer til din adresse",
+    "deliveryAddress": "Leveringsadresse",
+    "street": "Gade og nummer",
+    "city": "By",
+    "postalCode": "Postnummer",
+    "country": "Land",
     "pickupNotes": "Afhentningsnoter",
     "pickupNotesPlaceholder": "F.eks. foretrækker afhentning om eftermiddagen",
     "pickupInfo": "Afhentning sker i butikken. Du modtager et betalingslink, når vi har bekræftet ordren.",
+    "deliveryInfo": "Vi leverer til den angivne adresse. Du modtager et betalingslink, når vi har bekræftet ordren.",
     "orderSummary": "Ordreoversigt",
     "subtotal": "Subtotal",
     "paymentLater": "Betaling sker, når butikken har bekræftet ordren.",
@@ -82,6 +93,7 @@
     "errors": {
       "empty_cart": "Kurven er tom.",
       "missing_fields": "Udfyld alle obligatoriske felter.",
+      "missing_address": "Udfyld leveringsadressen.",
       "invalid_email": "E-mailadressen er ikke gyldig.",
       "server_error": "Der opstod en fejl. Prøv igen."
     }

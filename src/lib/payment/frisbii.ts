@@ -1,6 +1,7 @@
 import { createHmac, timingSafeEqual } from 'node:crypto'
 
 import type {
+  CancelPaymentSessionResult,
   CreatePaymentLinkParams,
   CreatePaymentLinkResult,
   PaymentGateway,
@@ -197,6 +198,37 @@ export class FrisbiiPaymentGateway implements PaymentGateway {
     return {
       paymentLinkUrl: data.url,
       paymentReference: data.id,
+    }
+  }
+
+  async cancelPaymentSession(sessionId: string): Promise<CancelPaymentSessionResult> {
+    const apiKey = getApiKey()
+    const id = sessionId.trim()
+
+    if (!id) {
+      return { ok: false, notFound: false, error: 'Missing session id' }
+    }
+
+    const response = await fetch(
+      `${this.checkoutApiBaseUrl}/session/${encodeURIComponent(id)}`,
+      {
+        method: 'DELETE',
+        headers: {
+          Accept: 'application/json',
+          Authorization: basicAuthHeader(apiKey),
+        },
+      },
+    )
+
+    if (response.status === 204 || response.status === 404) {
+      return response.status === 404 ? { ok: false, notFound: true } : { ok: true }
+    }
+
+    const detail = await response.text()
+    return {
+      ok: false,
+      notFound: false,
+      error: `Frisbii cancelPaymentSession failed (${response.status}): ${detail}`,
     }
   }
 

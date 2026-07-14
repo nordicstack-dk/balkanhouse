@@ -4,21 +4,37 @@ type ProductWithImages = Product & {
   images?: (number | Media)[] | null
 }
 
+function isPublicBlobUrl(url: string | null | undefined): boolean {
+  return typeof url === 'string' && url.includes('.public.blob.vercel-storage.com/')
+}
+
+function isPrivateBlobUrl(url: string | null | undefined): boolean {
+  return typeof url === 'string' && url.includes('.private.blob.vercel-storage.com/')
+}
+
+function isProxyMediaUrl(url: string | null | undefined): boolean {
+  return typeof url === 'string' && url.startsWith('/api/media/file/')
+}
+
+function shouldUseBlobProxy(): boolean {
+  return process.env.BLOB_ACCESS === 'private'
+}
+
 function getMediaImageUrl(media: Media): string | null {
   const url = media.url
 
-  if (url?.startsWith('/api/media/file/')) {
-    return url
+  if (isPublicBlobUrl(url)) {
+    return url ?? null
   }
 
-  if (url?.includes('.public.blob.vercel-storage.com/')) {
-    return url
-  }
-
-  if (url?.includes('.private.blob.vercel-storage.com/') || media.filename) {
+  if (isPrivateBlobUrl(url) || (shouldUseBlobProxy() && media.filename)) {
     if (media.filename) {
       return `/api/media/file/${encodeURIComponent(media.filename)}`
     }
+  }
+
+  if (isProxyMediaUrl(url)) {
+    return shouldUseBlobProxy() ? (url ?? null) : null
   }
 
   return url ?? null

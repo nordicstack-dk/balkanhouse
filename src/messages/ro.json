@@ -65,9 +65,20 @@
     "lastName": "Nume",
     "email": "Email",
     "phone": "Telefon",
+    "shippingMethod": "Metodă de livrare",
+    "shippingPickup": "Ridicare din magazin",
+    "shippingPickupHint": "Ridici comanda personal de la magazin",
+    "shippingDelivery": "Livrare la domiciliu",
+    "shippingDeliveryHint": "Livrăm comanda la adresa ta",
+    "deliveryAddress": "Adresa de livrare",
+    "street": "Stradă și număr",
+    "city": "Oraș",
+    "postalCode": "Cod poștal",
+    "country": "Țară",
     "pickupNotes": "Note pentru ridicare",
     "pickupNotesPlaceholder": "Ex: prefer o ridicare după-amiază",
     "pickupInfo": "Ridicarea se face de la magazin. Vei primi un link de plată după confirmarea comenzii.",
+    "deliveryInfo": "Livrăm comanda la adresa indicată. Vei primi un link de plată după confirmarea comenzii.",
     "orderSummary": "Rezumat comandă",
     "subtotal": "Subtotal",
     "paymentLater": "Plata se face după confirmarea comenzii de către magazin.",
@@ -82,6 +93,7 @@
     "errors": {
       "empty_cart": "Coșul este gol.",
       "missing_fields": "Completează toate câmpurile obligatorii.",
+      "missing_address": "Completează adresa de livrare.",
       "invalid_email": "Adresa de email nu este validă.",
       "server_error": "A apărut o eroare. Încearcă din nou."
     }

@@ -6,14 +6,64 @@ import {
   STOCK_STATUS_OPTIONS,
   UNIT_OPTIONS,
 } from '@/lib/contracts'
+import { formatProductAdminLabel, resolveLocalizedString } from '@/lib/products/admin-label'
 
 export const Products: CollectionConfig = {
   slug: 'products',
   admin: {
-    useAsTitle: 'title',
+    useAsTitle: 'adminLabel',
     defaultColumns: ['title', 'sku', 'priceDkk', 'stockStatus', 'category'],
+    listSearchableFields: ['sku', 'title', 'adminLabel'],
+  },
+  hooks: {
+    beforeChange: [
+      ({ data, originalDoc, req }) => {
+        if (!data) {
+          return data
+        }
+
+        const sku = data.sku ?? originalDoc?.sku
+        const title = resolveLocalizedString(
+          data.title ?? originalDoc?.title,
+          req.locale,
+        )
+        data.adminLabel = formatProductAdminLabel(sku, title)
+
+        return data
+      },
+    ],
+    beforeRead: [
+      ({ doc, req }) => {
+        if (!doc || req.context?.skipAdminLabelReadFix) {
+          return doc
+        }
+
+        const computed = formatProductAdminLabel(
+          doc.sku,
+          resolveLocalizedString(doc.title, req.locale),
+        )
+        const currentLabel = typeof doc.adminLabel === 'string' ? doc.adminLabel.trim() : ''
+
+        if (computed && currentLabel !== computed) {
+          doc.adminLabel = computed
+        }
+
+        return doc
+      },
+    ],
   },
   fields: [
+    {
+      name: 'adminLabel',
+      type: 'text',
+      localized: true,
+      index: true,
+      admin: {
+        hidden: true,
+        readOnly: true,
+        description: 'Auto-generated "SKU — Title" for admin search and labels',
+      },
+    },
     {
       name: 'sku',
       type: 'text',

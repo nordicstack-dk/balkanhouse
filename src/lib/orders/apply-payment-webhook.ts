@@ -101,10 +101,16 @@ export async function applyPaymentWebhook(
 
   if (
     nextStatus === ORDER_STATUS.PAID &&
-    order.status !== ORDER_STATUS.AWAITING_PAYMENT &&
-    order.status !== ORDER_STATUS.AWAITING_CONFIRMATION
+    order.status !== ORDER_STATUS.AWAITING_PAYMENT
   ) {
     return { applied: false, orderId: order.id, reason: 'invalid_transition' }
+  }
+
+  if (nextStatus === ORDER_STATUS.PAID && order.paymentReference) {
+    const sessionId = result.sessionId?.trim() ?? result.paymentReference.trim()
+    if (sessionId && order.paymentReference !== sessionId) {
+      return { applied: false, orderId: order.id, reason: 'stale_payment_reference' }
+    }
   }
 
   await payload.update({

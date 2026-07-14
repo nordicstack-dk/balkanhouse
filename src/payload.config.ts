@@ -1,5 +1,4 @@
 ﻿import { postgresAdapter } from '@payloadcms/db-postgres'
-import { mcpPlugin } from '@payloadcms/plugin-mcp'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
 import { vercelBlobStorage } from '@payloadcms/storage-vercel-blob'
 import path from 'path'
@@ -35,6 +34,7 @@ export default buildConfig({
     pool: {
       connectionString: process.env.DATABASE_URL || '',
     },
+    push: process.env.PAYLOAD_DISABLE_DB_PUSH !== 'true',
   }),
   sharp,
   localization: {
@@ -43,7 +43,6 @@ export default buildConfig({
     defaultLocale: 'ro',
   },
   plugins: [
-    mcpPlugin({}),
     vercelBlobStorage({
       enabled: Boolean(process.env.BLOB_READ_WRITE_TOKEN),
       access: 'public',

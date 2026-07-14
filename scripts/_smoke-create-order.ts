@@ -18,6 +18,7 @@ async function main() {
       lastName: 'Test',
       email: `schema-test+${Date.now()}@example.com`,
       phone: '+4512345678',
+      shippingMethod: 'pickup',
       pickupNotes: 'Test pickup note',
     },
     items: [

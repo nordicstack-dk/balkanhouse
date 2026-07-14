@@ -11,6 +11,7 @@ export function getPaymentGateway(): PaymentGateway {
 }
 
 export type {
+  CancelPaymentSessionResult,
   CreatePaymentLinkParams,
   CreatePaymentLinkResult,
   PaymentGateway,

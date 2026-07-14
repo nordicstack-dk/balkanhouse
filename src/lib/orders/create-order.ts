@@ -1,4 +1,4 @@
-import { ORDER_STATUS } from '@/lib/contracts'
+import { ORDER_STATUS, SHIPPING_METHOD, type ShippingMethod } from '@/lib/contracts'
 import type { CartItem } from '@/lib/cart'
 import { sendOrderReceived } from '@/lib/email/send-order-email'
 import { applyPromo } from '@/lib/pricing'
@@ -7,11 +7,21 @@ import { generateOrderNumber } from '@/lib/orders/order-number'
 import { computeLineTotalDkk, computeOrderTotals } from '@/lib/orders/order-totals'
 import type { Order } from '@/payload-types'
 
+export type CustomerAddressInput = {
+  street: string
+  city: string
+  postalCode: string
+}
+
+const DELIVERY_COUNTRY = 'DK'
+
 export type CheckoutCustomerInput = {
   firstName: string
   lastName: string
   email: string
   phone: string
+  shippingMethod: ShippingMethod
+  address?: CustomerAddressInput
   pickupNotes?: string
 }
 
@@ -58,6 +68,28 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
     return { ok: false, error: 'invalid_email' }
   }
 
+  const shippingMethod = customer.shippingMethod
+  if (shippingMethod !== SHIPPING_METHOD.PICKUP && shippingMethod !== SHIPPING_METHOD.DELIVERY) {
+    return { ok: false, error: 'missing_fields' }
+  }
+
+  let customerAddress:
+    | (CustomerAddressInput & {
+        country: string
+      })
+    | undefined
+  if (shippingMethod === SHIPPING_METHOD.DELIVERY) {
+    const street = customer.address?.street.trim() ?? ''
+    const city = customer.address?.city.trim() ?? ''
+    const postalCode = customer.address?.postalCode.trim() ?? ''
+
+    if (!street || !city || !postalCode) {
+      return { ok: false, error: 'missing_address' }
+    }
+
+    customerAddress = { street, city, postalCode, country: DELIVERY_COUNTRY }
+  }
+
   const lineItems = items.map(lineItemFromCart)
   const shippingCostDkk = 0
   const { subtotalDkk, totalDkk } = computeOrderTotals({ lineItems, shippingCostDkk })
@@ -73,8 +105,12 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
         customerLastName: lastName,
         customerPhone: phone,
         customerEmail: email,
-        pickupNotes: customer.pickupNotes?.trim() || undefined,
-        shippingMethod: 'pickup',
+        pickupNotes:
+          shippingMethod === SHIPPING_METHOD.PICKUP
+            ? customer.pickupNotes?.trim() || undefined
+            : undefined,
+        customerAddress,
+        shippingMethod,
         lineItems,
         subtotalDkk,
         shippingCostDkk,

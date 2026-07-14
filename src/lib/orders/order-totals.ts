@@ -2,6 +2,7 @@ export type OrderLineItemInput = {
   unitPriceDkk?: number | null
   quantity?: number | null
   lineTotalDkk?: number | null
+  lineTotalOverridden?: boolean | null
   [key: string]: unknown
 }
 
@@ -14,10 +15,18 @@ export function normalizeLineItem<T extends OrderLineItemInput>(
 ): T & { lineTotalDkk: number } {
   const unitPriceDkk = item.unitPriceDkk ?? 0
   const quantity = item.quantity ?? 0
+  const computedTotal = computeLineTotalDkk(unitPriceDkk, quantity)
+
+  if (item.lineTotalOverridden === true && item.lineTotalDkk != null) {
+    return {
+      ...item,
+      lineTotalDkk: item.lineTotalDkk,
+    }
+  }
 
   return {
     ...item,
-    lineTotalDkk: computeLineTotalDkk(unitPriceDkk, quantity),
+    lineTotalDkk: computedTotal,
   }
 }
 

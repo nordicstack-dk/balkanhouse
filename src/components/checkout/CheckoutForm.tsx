@@ -6,8 +6,12 @@ import { useTranslations } from 'next-intl'
 import { submitCheckout } from '@/app/(frontend)/actions/checkout'
 import { useCart } from '@/components/cart/CartProvider'
 import { Link, useRouter } from '@/i18n/navigation'
+import { SHIPPING_METHOD, type ShippingMethod } from '@/lib/contracts'
 import { applyPromo, formatPriceDkk } from '@/lib/pricing'
 import { cartSubtotal } from '@/lib/cart'
+
+const inputClassName =
+  'w-full rounded-lg border border-cream-dark px-3 py-2 text-text focus:border-burgundy focus:outline-none focus:ring-1 focus:ring-burgundy'
 
 export function CheckoutForm() {
   const t = useTranslations('checkout')
@@ -17,6 +21,10 @@ export function CheckoutForm() {
   const [lastName, setLastName] = useState('')
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
+  const [shippingMethod, setShippingMethod] = useState<ShippingMethod>(SHIPPING_METHOD.PICKUP)
+  const [street, setStreet] = useState('')
+  const [city, setCity] = useState('')
+  const [postalCode, setPostalCode] = useState('')
   const [pickupNotes, setPickupNotes] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
@@ -47,7 +55,18 @@ export function CheckoutForm() {
     setSubmitting(true)
 
     const result = await submitCheckout(
-      { firstName, lastName, email, phone, pickupNotes },
+      {
+        firstName,
+        lastName,
+        email,
+        phone,
+        shippingMethod,
+        address:
+          shippingMethod === SHIPPING_METHOD.DELIVERY
+            ? { street, city, postalCode }
+            : undefined,
+        pickupNotes: shippingMethod === SHIPPING_METHOD.PICKUP ? pickupNotes : undefined,
+      },
       items,
     )
 
@@ -55,6 +74,7 @@ export function CheckoutForm() {
       const errorMessages: Record<string, string> = {
         empty_cart: t('errors.empty_cart'),
         missing_fields: t('errors.missing_fields'),
+        missing_address: t('errors.missing_address'),
         invalid_email: t('errors.invalid_email'),
         server_error: t('errors.server_error'),
       }
@@ -85,7 +105,7 @@ export function CheckoutForm() {
               autoComplete="given-name"
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
-              className="w-full rounded-lg border border-cream-dark px-3 py-2 text-text focus:border-burgundy focus:outline-none focus:ring-1 focus:ring-burgundy"
+              className={inputClassName}
             />
           </div>
           <div>
@@ -100,7 +120,7 @@ export function CheckoutForm() {
               autoComplete="family-name"
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
-              className="w-full rounded-lg border border-cream-dark px-3 py-2 text-text focus:border-burgundy focus:outline-none focus:ring-1 focus:ring-burgundy"
+              className={inputClassName}
             />
           </div>
         </div>
@@ -117,7 +137,7 @@ export function CheckoutForm() {
             autoComplete="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-lg border border-cream-dark px-3 py-2 text-text focus:border-burgundy focus:outline-none focus:ring-1 focus:ring-burgundy"
+            className={inputClassName}
           />
         </div>
 
@@ -133,26 +153,135 @@ export function CheckoutForm() {
             autoComplete="tel"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
-            className="w-full rounded-lg border border-cream-dark px-3 py-2 text-text focus:border-burgundy focus:outline-none focus:ring-1 focus:ring-burgundy"
+            className={inputClassName}
           />
         </div>
 
-        <div>
-          <label htmlFor="pickupNotes" className="mb-1 block text-sm font-medium text-text">
-            {t('pickupNotes')}
-          </label>
-          <textarea
-            id="pickupNotes"
-            name="pickupNotes"
-            rows={3}
-            value={pickupNotes}
-            onChange={(e) => setPickupNotes(e.target.value)}
-            placeholder={t('pickupNotesPlaceholder')}
-            className="w-full rounded-lg border border-cream-dark px-3 py-2 text-text focus:border-burgundy focus:outline-none focus:ring-1 focus:ring-burgundy"
-          />
-        </div>
+        <fieldset className="space-y-3">
+          <legend className="mb-1 text-sm font-medium text-text">{t('shippingMethod')}</legend>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label
+              className={`flex cursor-pointer items-start gap-3 rounded-lg border px-4 py-3 transition ${
+                shippingMethod === SHIPPING_METHOD.PICKUP
+                  ? 'border-burgundy bg-burgundy/5 ring-1 ring-burgundy'
+                  : 'border-cream-dark hover:border-burgundy/40'
+              }`}
+            >
+              <input
+                type="radio"
+                name="shippingMethod"
+                value={SHIPPING_METHOD.PICKUP}
+                checked={shippingMethod === SHIPPING_METHOD.PICKUP}
+                onChange={() => setShippingMethod(SHIPPING_METHOD.PICKUP)}
+                className="mt-1 accent-burgundy"
+              />
+              <span>
+                <span className="block font-medium text-text">{t('shippingPickup')}</span>
+                <span className="mt-0.5 block text-sm text-text-muted">{t('shippingPickupHint')}</span>
+              </span>
+            </label>
+            <label
+              className={`flex cursor-pointer items-start gap-3 rounded-lg border px-4 py-3 transition ${
+                shippingMethod === SHIPPING_METHOD.DELIVERY
+                  ? 'border-burgundy bg-burgundy/5 ring-1 ring-burgundy'
+                  : 'border-cream-dark hover:border-burgundy/40'
+              }`}
+            >
+              <input
+                type="radio"
+                name="shippingMethod"
+                value={SHIPPING_METHOD.DELIVERY}
+                checked={shippingMethod === SHIPPING_METHOD.DELIVERY}
+                onChange={() => setShippingMethod(SHIPPING_METHOD.DELIVERY)}
+                className="mt-1 accent-burgundy"
+              />
+              <span>
+                <span className="block font-medium text-text">{t('shippingDelivery')}</span>
+                <span className="mt-0.5 block text-sm text-text-muted">
+                  {t('shippingDeliveryHint')}
+                </span>
+              </span>
+            </label>
+          </div>
+        </fieldset>
 
-        <p className="text-sm text-text-muted">{t('pickupInfo')}</p>
+        {shippingMethod === SHIPPING_METHOD.DELIVERY && (
+          <div className="space-y-4 rounded-lg border border-cream-dark bg-cream/30 p-4">
+            <h3 className="text-sm font-semibold text-text">{t('deliveryAddress')}</h3>
+            <div>
+              <label htmlFor="street" className="mb-1 block text-sm font-medium text-text">
+                {t('street')}
+              </label>
+              <input
+                id="street"
+                name="street"
+                type="text"
+                required
+                autoComplete="street-address"
+                value={street}
+                onChange={(e) => setStreet(e.target.value)}
+                className={inputClassName}
+              />
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label htmlFor="city" className="mb-1 block text-sm font-medium text-text">
+                  {t('city')}
+                </label>
+                <input
+                  id="city"
+                  name="city"
+                  type="text"
+                  required
+                  autoComplete="address-level2"
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                  className={inputClassName}
+                />
+              </div>
+              <div>
+                <label htmlFor="postalCode" className="mb-1 block text-sm font-medium text-text">
+                  {t('postalCode')}
+                </label>
+                <input
+                  id="postalCode"
+                  name="postalCode"
+                  type="text"
+                  required
+                  autoComplete="postal-code"
+                  value={postalCode}
+                  onChange={(e) => setPostalCode(e.target.value)}
+                  className={inputClassName}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {shippingMethod === SHIPPING_METHOD.PICKUP && (
+          <>
+            <div>
+              <label htmlFor="pickupNotes" className="mb-1 block text-sm font-medium text-text">
+                {t('pickupNotes')}
+              </label>
+              <textarea
+                id="pickupNotes"
+                name="pickupNotes"
+                rows={3}
+                value={pickupNotes}
+                onChange={(e) => setPickupNotes(e.target.value)}
+                placeholder={t('pickupNotesPlaceholder')}
+                className={inputClassName}
+              />
+            </div>
+
+            <p className="text-sm text-text-muted">{t('pickupInfo')}</p>
+          </>
+        )}
+
+        {shippingMethod === SHIPPING_METHOD.DELIVERY && (
+          <p className="text-sm text-text-muted">{t('deliveryInfo')}</p>
+        )}
 
         {error && (
           <p className="rounded-lg bg-danger/10 px-3 py-2 text-sm text-danger" role="alert">
