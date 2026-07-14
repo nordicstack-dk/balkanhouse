@@ -45,3 +45,15 @@ export function getProductImageUrl(product: ProductWithImages): string | null {
   if (!first || typeof first === 'number') return null
   return getMediaImageUrl(first)
 }
+
+/**
+ * Alt text for the product's primary image. Prefers the media document's
+ * required alt field, falls back to the product title. Always returns a
+ * string so the rendered <img> never drops its alt attribute (which would
+ * hurt screen readers and trigger next/image dev warnings).
+ */
+export function getProductImageAlt(product: ProductWithImages): string {
+  const first = product.images?.[0]
+  if (first && typeof first !== 'number' && first.alt) return first.alt
+  return product.title || ''
+}

@@ -4,7 +4,7 @@ import { useTranslations } from 'next-intl'
 import { Link } from '@/i18n/navigation'
 import { applyPromo, formatPriceDkk, productSlug } from '@/lib/pricing'
 import type { Product } from '@/payload-types'
-import { getProductImageUrl } from '@/lib/product-utils'
+import { getProductImageAlt, getProductImageUrl } from '@/lib/product-utils'
 
 import { PromoBadge } from './PromoBadge'
 import { StockBadge } from './StockBadge'
@@ -27,7 +27,7 @@ export function ProductCard({ product, promoPercent }: ProductCardProps) {
           {imageUrl ? (
             <Image
               src={imageUrl}
-              alt={product.title}
+              alt={getProductImageAlt(product)}
               fill
               className="object-cover transition-transform duration-300 group-hover:scale-105"
               sizes="(max-width: 768px) 50vw, 288px"

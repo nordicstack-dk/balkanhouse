@@ -15,7 +15,7 @@ import {
   getProductBySku,
 } from '@/lib/storefront'
 import { getPromoPercentForProduct } from '@/lib/promotions'
-import { getProductImageUrl } from '@/lib/product-utils'
+import { getProductImageAlt, getProductImageUrl } from '@/lib/product-utils'
 
 type Props = {
   params: Promise<{ locale: string; slug: string }>
@@ -51,7 +51,7 @@ export default async function ProductPage({ params }: Props) {
         {imageUrl ? (
           <Image
             src={imageUrl}
-            alt={product.title}
+            alt={getProductImageAlt(product)}
             fill
             className="object-cover"
             sizes="(max-width: 768px) 100vw, 576px"
