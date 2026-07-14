@@ -7,7 +7,6 @@ import { useSearchParams } from 'next/navigation'
 import { Link, usePathname } from '@/i18n/navigation'
 
 import { CartButton } from '@/components/cart/CartButton'
-import { LinkPendingSpinner } from '@/components/ui/LinkPendingSpinner'
 
 export function Header() {
   const t = useTranslations('nav')
@@ -44,10 +43,9 @@ export function Header() {
             <Link
               key={link.href}
               href={link.href}
-              className="inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-burgundy-dark/50 active:bg-burgundy-dark/70"
+              className="rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-burgundy-dark/50 active:bg-burgundy-dark/70"
             >
               {link.label}
-              <LinkPendingSpinner className="h-3.5 w-3.5" />
             </Link>
           ))}
         </nav>
@@ -63,10 +61,9 @@ export function Header() {
           <Link
             key={link.href}
             href={link.href}
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-md px-3 py-1.5 text-sm transition-colors hover:bg-burgundy-dark/50 active:bg-burgundy-dark/70"
+            className="shrink-0 rounded-md px-3 py-1.5 text-sm transition-colors hover:bg-burgundy-dark/50 active:bg-burgundy-dark/70"
           >
             {link.label}
-            <LinkPendingSpinner className="h-3.5 w-3.5" />
           </Link>
         ))}
       </nav>
