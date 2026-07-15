@@ -5,6 +5,7 @@ import type { Locale } from '@/i18n/routing'
 import type { Category, Media, Product, Promotion } from '@/payload-types'
 
 import { getPayloadClient } from './payload'
+import { matchesSearch } from './search'
 
 export type ProductWithRelations = Product & {
   category?: Category | null
@@ -62,13 +63,7 @@ export async function getProducts(options: {
   search?: string
   limit?: number
 }): Promise<ProductWithRelations[]> {
-  const search = options.search?.trim()
-
-  if (search) {
-    return fetchProducts(options)
-  }
-
-  return unstable_cache(
+  const base = await unstable_cache(
     () => fetchProducts(options),
     [
       'storefront',
@@ -79,12 +74,20 @@ export async function getProducts(options: {
     ],
     { revalidate: REVALIDATE_SECONDS, tags: ['products'] },
   )()
+
+  // Search filters the cached catalog in-process: diacritic-insensitive
+  // ("tuica" matches "Țuică") and token-based ("gem prune" matches
+  // "Gem de prune"). At catalog sizes in the hundreds this is faster
+  // than an uncached DB LIKE query; revisit (e.g. Postgres unaccent)
+  // if the catalog grows to thousands.
+  const search = options.search?.trim()
+  if (!search) return base
+  return base.filter((product) => matchesSearch(product.title, search))
 }
 
 async function fetchProducts(options: {
   locale: Locale
   categoryId?: number
-  search?: string
   limit?: number
 }): Promise<ProductWithRelations[]> {
   const payload = await getPayloadClient()
@@ -92,10 +95,6 @@ async function fetchProducts(options: {
 
   if (options.categoryId) {
     where.category = { equals: options.categoryId }
-  }
-
-  if (options.search?.trim()) {
-    where.title = { contains: options.search.trim() }
   }
 
   const result = await payload.find({
@@ -126,7 +125,17 @@ export async function getProductsPage(options: {
   const page = Math.max(1, Math.floor(options.page ?? 1))
 
   if (search) {
-    return fetchProductsPage({ ...options, page })
+    // Diacritic-insensitive search over the cached catalog, paginated in-process.
+    const filtered = await getProducts({
+      locale: options.locale,
+      categoryId: options.categoryId,
+      search,
+    })
+    return {
+      docs: filtered.slice((page - 1) * SHOP_PAGE_SIZE, page * SHOP_PAGE_SIZE),
+      page,
+      totalPages: Math.max(1, Math.ceil(filtered.length / SHOP_PAGE_SIZE)),
+    }
   }
 
   return unstable_cache(
@@ -145,7 +154,6 @@ export async function getProductsPage(options: {
 async function fetchProductsPage(options: {
   locale: Locale
   categoryId?: number
-  search?: string
   page: number
 }): Promise<ProductListPage> {
   const payload = await getPayloadClient()
@@ -153,10 +161,6 @@ async function fetchProductsPage(options: {
 
   if (options.categoryId) {
     where.category = { equals: options.categoryId }
-  }
-
-  if (options.search?.trim()) {
-    where.title = { contains: options.search.trim() }
   }
 
   const result = await payload.find({
