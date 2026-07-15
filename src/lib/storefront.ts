@@ -70,7 +70,7 @@ export async function getProducts(options: {
       'products',
       options.locale,
       String(options.categoryId ?? 'all'),
-      String(options.limit ?? 100),
+      String(options.limit ?? 'unbounded'),
     ],
     { revalidate: REVALIDATE_SECONDS, tags: ['products'] },
   )()
@@ -101,7 +101,9 @@ async function fetchProducts(options: {
     collection: 'products',
     locale: options.locale,
     where,
-    limit: options.limit ?? 100,
+    // No explicit limit -> fetch the entire catalog in one query, so the
+    // cached list (and search over it) is always complete regardless of size.
+    ...(options.limit ? { limit: options.limit } : { pagination: false, limit: 0 }),
     depth: 1,
     sort: 'title',
   })
