@@ -3,6 +3,12 @@
 
 @source "../**/*.{ts,tsx}";
 
+/* Reserve scrollbar space on every page so centered content doesn't
+   shift horizontally between long (scrollable) and short pages. */
+html {
+  scrollbar-gutter: stable;
+}
+
 body {
   font-family: var(--font-source-sans, var(--font-sans));
 }
@@ -65,18 +71,6 @@ h2 {
 
 .bh-badge-pop {
   animation: bh-pop 0.3s ease-out;
-}
-
-/* Appear only if still mounted after a short delay — avoids spinner flash on fast navigations */
-@keyframes bh-appear {
-  to {
-    opacity: 1;
-  }
-}
-
-.bh-appear-delayed {
-  opacity: 0;
-  animation: bh-appear 0.15s ease-out 0.15s forwards;
 }
 
 @media (prefers-reduced-motion: reduce) {

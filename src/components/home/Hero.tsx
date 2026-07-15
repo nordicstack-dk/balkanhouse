@@ -3,7 +3,6 @@
 import { useTranslations } from 'next-intl'
 
 import { Link } from '@/i18n/navigation'
-import { LinkPendingSpinner } from '@/components/ui/LinkPendingSpinner'
 
 export function Hero() {
   const t = useTranslations('home')
@@ -20,7 +19,6 @@ export function Hero() {
         >
           {t('shopNow')}
           <span aria-hidden>→</span>
-          <LinkPendingSpinner />
         </Link>
       </div>
       <div

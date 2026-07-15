@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import { useTranslations } from 'next-intl'
 
 import { submitCheckout } from '@/app/(frontend)/actions/checkout'
@@ -325,8 +326,26 @@ export function CheckoutForm() {
           {items.map((item) => {
             const unitPrice = applyPromo(item.priceDkk, item.promoPercent)
             return (
-              <li key={item.productId} className="flex justify-between gap-4 py-3 text-sm">
-                <span className="text-text">
+              <li key={item.productId} className="flex items-center gap-3 py-3 text-sm">
+                <span className="relative block h-10 w-10 shrink-0 overflow-hidden rounded-md border border-cream-dark bg-cream-dark/30">
+                  {item.imageUrl ? (
+                    <Image
+                      src={item.imageUrl}
+                      alt=""
+                      fill
+                      sizes="40px"
+                      className="object-cover"
+                    />
+                  ) : (
+                    <span
+                      className="flex h-full items-center justify-center text-sm text-wood-light"
+                      aria-hidden
+                    >
+                      🏠
+                    </span>
+                  )}
+                </span>
+                <span className="min-w-0 flex-1 text-text">
                   {item.title} × {item.quantity}
                 </span>
                 <span className="shrink-0 font-medium text-burgundy">

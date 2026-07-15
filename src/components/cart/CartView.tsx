@@ -1,12 +1,12 @@
 'use client'
 
+import Image from 'next/image'
 import { useTranslations } from 'next-intl'
 
 import { Link } from '@/i18n/navigation'
 import { applyPromo, formatPriceDkk } from '@/lib/pricing'
 import { cartSubtotal } from '@/lib/cart'
 import { useCart } from '@/components/cart/CartProvider'
-import { LinkPendingSpinner } from '@/components/ui/LinkPendingSpinner'
 import { Skeleton } from '@/components/ui/Skeleton'
 
 const qtyButtonClassName =
@@ -76,6 +76,27 @@ export function CartView() {
           const unitPrice = applyPromo(item.priceDkk, item.promoPercent)
           return (
             <li key={item.productId} className="flex flex-wrap items-center gap-4 p-4">
+              <Link
+                href={`/produs/${encodeURIComponent(item.sku)}`}
+                className="relative block h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-cream-dark bg-cream-dark/30"
+              >
+                {item.imageUrl ? (
+                  <Image
+                    src={item.imageUrl}
+                    alt=""
+                    fill
+                    sizes="56px"
+                    className="object-cover"
+                  />
+                ) : (
+                  <span
+                    className="flex h-full items-center justify-center text-xl text-wood-light"
+                    aria-hidden
+                  >
+                    🏠
+                  </span>
+                )}
+              </Link>
               <div className="min-w-0 flex-1">
                 <Link
                   href={`/produs/${encodeURIComponent(item.sku)}`}
@@ -141,10 +162,9 @@ export function CartView() {
         </div>
         <Link
           href="/checkout"
-          className="inline-flex w-full max-w-xs items-center justify-center gap-2 rounded-lg bg-burgundy py-3 text-center font-semibold text-cream shadow-sm transition-all hover:bg-burgundy-dark hover:shadow-md active:scale-[0.98]"
+          className="w-full max-w-xs rounded-lg bg-burgundy py-3 text-center font-semibold text-cream shadow-sm transition-all hover:bg-burgundy-dark hover:shadow-md active:scale-[0.98]"
         >
           {t('submitOrder')}
-          <LinkPendingSpinner />
         </Link>
       </div>
     </div>

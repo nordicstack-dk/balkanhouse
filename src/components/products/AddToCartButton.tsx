@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl'
 
 import { Link } from '@/i18n/navigation'
 import { STOCK_STATUS } from '@/lib/contracts'
+import { getProductImageUrl } from '@/lib/product-utils'
 import { useCart } from '@/components/cart/CartProvider'
 import type { Product } from '@/payload-types'
 
@@ -46,6 +47,7 @@ export function AddToCartButton({ product, promoPercent }: AddToCartButtonProps)
       priceDkk: product.priceDkk,
       unit: product.unit,
       promoPercent: promoPercent ?? null,
+      imageUrl: getProductImageUrl(product),
     })
     setAdded(true)
     if (timerRef.current) clearTimeout(timerRef.current)

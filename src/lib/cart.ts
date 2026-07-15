@@ -6,6 +6,8 @@ export type CartItem = {
   priceDkk: number
   unit: 'piece' | 'kg'
   promoPercent: number | null
+  /** Snapshot of the product's primary image at add-to-cart time; optional for carts saved before this field existed. */
+  imageUrl?: string | null
 }
 
 export const CART_STORAGE_KEY = 'balkanhouse-cart'
