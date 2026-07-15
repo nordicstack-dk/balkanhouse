@@ -2,16 +2,18 @@
 
 import { useTranslations } from 'next-intl'
 
-import { Link } from '@/i18n/navigation'
+import { Link, usePathname } from '@/i18n/navigation'
 import type { Category } from '@/payload-types'
 
 type CategoryNavProps = {
   categories: Category[]
-  activeSlug?: string
 }
 
-export function CategoryNav({ categories, activeSlug }: CategoryNavProps) {
+export function CategoryNav({ categories }: CategoryNavProps) {
   const t = useTranslations('shop')
+  const pathname = usePathname()
+  // '/shop' -> undefined, '/shop/<slug>' -> '<slug>'
+  const activeSlug = decodeURIComponent(pathname.split('/')[2] ?? '') || undefined
 
   return (
     <aside className="shrink-0 md:w-48">

@@ -2,12 +2,9 @@ import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { notFound } from 'next/navigation'
 
 import { ProductGrid } from '@/components/products/ProductGrid'
-import { CategoryNav } from '@/components/shop/CategoryNav'
-import { SearchBar } from '@/components/shop/SearchBar'
 import type { Locale } from '@/i18n/routing'
 import {
   getActivePromotions,
-  getCategories,
   getCategoryBySlug,
   getProducts,
 } from '@/lib/storefront'
@@ -18,16 +15,16 @@ type Props = {
 }
 
 // This page reads searchParams (?q=) so it renders per request;
-// the tagged storefront cache underneath keeps it fast.
+// the tagged storefront cache underneath keeps it fast. Search bar and
+// category nav live in the persistent shop layout.
 
 export default async function CategoryShopPage({ params, searchParams }: Props) {
   const { locale, categorySlug } = await params
   const { q } = await searchParams
   setRequestLocale(locale as Locale)
 
-  const [category, categories, promotions, t] = await Promise.all([
+  const [category, promotions, t] = await Promise.all([
     getCategoryBySlug(categorySlug, locale as Locale),
-    getCategories(locale as Locale),
     getActivePromotions(),
     getTranslations('shop'),
   ])
@@ -42,19 +39,14 @@ export default async function CategoryShopPage({ params, searchParams }: Props) 
   return (
     <div>
       <h1 className="mb-6 text-3xl font-bold text-text">{category.name}</h1>
-      <div className="mb-6">
-        <SearchBar defaultValue={q} />
-      </div>
-      <div className="flex flex-col gap-8 md:flex-row">
-        <CategoryNav categories={categories} activeSlug={categorySlug} />
-        <div className="min-w-0 flex-1">
-          {products.length ? (
-            <ProductGrid products={products} promotions={promotions} />
-          ) : (
-            <p className="text-text-muted">{t('noProducts')}</p>
-          )}
-        </div>
-      </div>
+      {q && (
+        <p className="mb-4 text-sm text-text-muted">{t('resultsFor', { query: q })}</p>
+      )}
+      {products.length ? (
+        <ProductGrid products={products} promotions={promotions} />
+      ) : (
+        <p className="text-text-muted">{t('noProducts')}</p>
+      )}
     </div>
   )
 }
