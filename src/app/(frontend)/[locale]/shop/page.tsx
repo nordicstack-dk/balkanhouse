@@ -33,7 +33,6 @@ export default async function ShopPage({ params, searchParams }: Props) {
 
   return (
     <div>
-      <h1 className="mb-6 text-3xl font-bold text-text">{t('title')}</h1>
       {q && (
         <p className="mb-4 text-sm text-text-muted">{t('resultsFor', { query: q })}</p>
       )}

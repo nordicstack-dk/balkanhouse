@@ -3,6 +3,7 @@ import { setRequestLocale } from 'next-intl/server'
 
 import { CategoryNav } from '@/components/shop/CategoryNav'
 import { SearchBar } from '@/components/shop/SearchBar'
+import { ShopHeading } from '@/components/shop/ShopHeading'
 import { Skeleton } from '@/components/ui/Skeleton'
 import type { Locale } from '@/i18n/routing'
 import { getCategories } from '@/lib/storefront'
@@ -30,7 +31,10 @@ export default async function ShopLayout({ children, params }: Props) {
       </div>
       <div className="flex flex-col gap-8 md:flex-row">
         <CategoryNav categories={categories} />
-        <div className="min-w-0 flex-1">{children}</div>
+        <div className="min-w-0 flex-1">
+          <ShopHeading categories={categories} />
+          {children}
+        </div>
       </div>
     </div>
   )
