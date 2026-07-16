@@ -20,6 +20,12 @@ const dirname = path.dirname(filename)
 export default buildConfig({
   admin: {
     user: Users.slug,
+    meta: {
+      titleSuffix: ' — Balkan House',
+    },
+    components: {
+      beforeDashboard: ['@/components/admin/DashboardWelcome#DashboardWelcome'],
+    },
     importMap: {
       baseDir: path.resolve(dirname),
     },

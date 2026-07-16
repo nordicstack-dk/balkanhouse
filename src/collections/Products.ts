@@ -11,10 +11,16 @@ import { revalidateStorefrontTags } from '@/lib/revalidate-storefront'
 
 export const Products: CollectionConfig = {
   slug: 'products',
+  labels: {
+    singular: 'Product',
+    plural: 'Products',
+  },
   admin: {
     useAsTitle: 'adminLabel',
     defaultColumns: ['title', 'sku', 'priceDkk', 'stockStatus', 'category'],
     listSearchableFields: ['sku', 'title', 'adminLabel'],
+    group: 'Catalog',
+    description: 'Products shown in the shop. Identity, price and stock live in the sidebar; content in the main panel.',
   },
   hooks: {
     // Promotions cache also embeds product docs (depth 2), so invalidate both.
@@ -74,12 +80,19 @@ export const Products: CollectionConfig = {
       required: true,
       unique: true,
       index: true,
+      admin: {
+        position: 'sidebar',
+        description: 'Unique product code. Also used in the product URL (/produs/<sku>).',
+      },
     },
     {
       name: 'title',
       type: 'text',
       required: true,
       localized: true,
+      admin: {
+        description: 'Product name shown to customers (translate per language).',
+      },
     },
     {
       name: 'priceDkk',
@@ -87,7 +100,8 @@ export const Products: CollectionConfig = {
       required: true,
       min: 0,
       admin: {
-        description: 'Price in DKK (e.g. 49.95)',
+        position: 'sidebar',
+        description: 'Price in DKK, VAT included (e.g. 49.95).',
       },
     },
     {
@@ -95,6 +109,10 @@ export const Products: CollectionConfig = {
       type: 'select',
       required: true,
       options: UNIT_OPTIONS,
+      admin: {
+        position: 'sidebar',
+        description: 'Whether the price is per piece or per kilogram.',
+      },
     },
     {
       name: 'stockStatus',
@@ -119,22 +137,34 @@ export const Products: CollectionConfig = {
       type: 'upload',
       relationTo: 'media',
       hasMany: true,
+      admin: {
+        description: 'The first image is used as the main product photo.',
+      },
     },
     {
       name: 'allergens',
       type: 'select',
       hasMany: true,
       options: ALLERGEN_EU_OPTIONS,
+      admin: {
+        description: 'EU allergen labels listed on the product page.',
+      },
     },
     {
       name: 'ingredients',
       type: 'textarea',
       localized: true,
+      admin: {
+        description: 'Ingredient list shown on the product page (translate per language).',
+      },
     },
     {
       name: 'description',
       type: 'richText',
       localized: true,
+      admin: {
+        description: 'Full product description (translate per language).',
+      },
     },
     {
       name: 'countryOfOrigin',

@@ -128,6 +128,8 @@ export interface UserAuthOperations {
   };
 }
 /**
+ * Accounts that can sign in to this admin panel.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "users".
  */
@@ -153,11 +155,16 @@ export interface User {
   collection: 'users';
 }
 /**
+ * Images used across the shop. Product photos can be uploaded here or directly from a product.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "media".
  */
 export interface Media {
   id: number;
+  /**
+   * Describes the image for screen readers and SEO. Required.
+   */
   alt: string;
   updatedAt: string;
   createdAt: string;
@@ -172,18 +179,31 @@ export interface Media {
   focalY?: number | null;
 }
 /**
+ * Shop categories used for browsing and filtering products.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "categories".
  */
 export interface Category {
   id: number;
+  /**
+   * Category name shown in the shop (translate per language).
+   */
   name: string;
+  /**
+   * URL segment, e.g. 'conserve' becomes /shop/conserve (translate per language).
+   */
   slug: string;
+  /**
+   * Optional parent category, for nesting.
+   */
   parent?: (number | null) | Category;
   updatedAt: string;
   createdAt: string;
 }
 /**
+ * Products shown in the shop. Identity, price and stock live in the sidebar; content in the main panel.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "products".
  */
@@ -193,16 +213,31 @@ export interface Product {
    * Auto-generated "SKU — Title" for admin search and labels
    */
   adminLabel?: string | null;
+  /**
+   * Unique product code. Also used in the product URL (/produs/<sku>).
+   */
   sku: string;
+  /**
+   * Product name shown to customers (translate per language).
+   */
   title: string;
   /**
-   * Price in DKK (e.g. 49.95)
+   * Price in DKK, VAT included (e.g. 49.95).
    */
   priceDkk: number;
+  /**
+   * Whether the price is per piece or per kilogram.
+   */
   unit: 'piece' | 'kg';
   stockStatus: 'in' | 'low' | 'out';
   category?: (number | null) | Category;
+  /**
+   * The first image is used as the main product photo.
+   */
   images?: (number | Media)[] | null;
+  /**
+   * EU allergen labels listed on the product page.
+   */
   allergens?:
     | (
         | 'gluten'
@@ -221,7 +256,13 @@ export interface Product {
         | 'molluscs'
       )[]
     | null;
+  /**
+   * Ingredient list shown on the product page (translate per language).
+   */
   ingredients?: string | null;
+  /**
+   * Full product description (translate per language).
+   */
   description?: {
     root: {
       type: string;
@@ -257,23 +298,39 @@ export interface Product {
   createdAt: string;
 }
 /**
+ * Time-boxed discounts applied to selected products. A promotion is live between its start and end dates (inclusive).
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "promotions".
  */
 export interface Promotion {
   id: number;
   /**
-   * Internal label for this promotion
+   * Internal label for this promotion (not shown to customers).
    */
   name: string;
+  /**
+   * Discount percentage applied to the linked products (1–100).
+   */
   percentOff: number;
+  /**
+   * First day the promotion is active (inclusive).
+   */
   startDate: string;
+  /**
+   * Last day the promotion is active (inclusive).
+   */
   endDate: string;
+  /**
+   * The products this promotion discounts.
+   */
   products?: (number | Product)[] | null;
   updatedAt: string;
   createdAt: string;
 }
 /**
+ * Customer orders. Confirm new orders, send the payment link, then mark as shipped.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "orders".
  */
@@ -363,7 +420,7 @@ export interface Order {
   createdAt: string;
 }
 /**
- * Optional guest customer records for reference
+ * Optional guest customer records, kept for reference.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "customers".

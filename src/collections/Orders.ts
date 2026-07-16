@@ -26,9 +26,16 @@ import type { Order } from '@/payload-types'
 
 export const Orders: CollectionConfig = {
   slug: 'orders',
+  labels: {
+    singular: 'Order',
+    plural: 'Orders',
+  },
   admin: {
     useAsTitle: 'orderNumber',
     defaultColumns: ['orderNumber', 'status', 'customerEmail', 'totalDkk', 'createdAt'],
+    listSearchableFields: ['orderNumber', 'customerEmail', 'customerLastName'],
+    group: 'Sales',
+    description: 'Customer orders. Confirm new orders, send the payment link, then mark as shipped.',
   },
   endpoints: [
     {

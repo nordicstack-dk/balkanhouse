@@ -4,6 +4,10 @@ import { revalidateStorefrontTags } from '@/lib/revalidate-storefront'
 
 export const Categories: CollectionConfig = {
   slug: 'categories',
+  labels: {
+    singular: 'Category',
+    plural: 'Categories',
+  },
   hooks: {
     // Product caches embed category docs, so invalidate those too.
     afterChange: [() => revalidateStorefrontTags('categories', 'products')],
@@ -12,6 +16,9 @@ export const Categories: CollectionConfig = {
   admin: {
     useAsTitle: 'name',
     defaultColumns: ['name', 'slug', 'parent'],
+    listSearchableFields: ['name', 'slug'],
+    group: 'Catalog',
+    description: 'Shop categories used for browsing and filtering products.',
   },
   fields: [
     {
@@ -19,6 +26,9 @@ export const Categories: CollectionConfig = {
       type: 'text',
       required: true,
       localized: true,
+      admin: {
+        description: 'Category name shown in the shop (translate per language).',
+      },
     },
     {
       name: 'slug',
@@ -26,6 +36,9 @@ export const Categories: CollectionConfig = {
       required: true,
       localized: true,
       index: true,
+      admin: {
+        description: "URL segment, e.g. 'conserve' becomes /shop/conserve (translate per language).",
+      },
     },
     {
       name: 'parent',
@@ -33,6 +46,7 @@ export const Categories: CollectionConfig = {
       relationTo: 'categories',
       admin: {
         position: 'sidebar',
+        description: 'Optional parent category, for nesting.',
       },
     },
   ],

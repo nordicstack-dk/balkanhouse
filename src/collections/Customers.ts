@@ -2,10 +2,16 @@ import type { CollectionConfig } from 'payload'
 
 export const Customers: CollectionConfig = {
   slug: 'customers',
+  labels: {
+    singular: 'Customer',
+    plural: 'Customers',
+  },
   admin: {
     useAsTitle: 'email',
     defaultColumns: ['firstName', 'lastName', 'email', 'phone'],
-    description: 'Optional guest customer records for reference',
+    listSearchableFields: ['firstName', 'lastName', 'email', 'phone'],
+    group: 'Sales',
+    description: 'Optional guest customer records, kept for reference.',
   },
   fields: [
     {
