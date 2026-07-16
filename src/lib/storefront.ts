@@ -6,6 +6,10 @@ import type { Category, Media, Product, Promotion } from '@/payload-types'
 
 import { getPayloadClient } from './payload'
 import { matchesSearch } from './search'
+import { searchProductIds } from './search-db'
+
+// Cap for how many search matches a non-paginated (category) search returns.
+const SEARCH_MATCH_CAP = 500
 
 export type ProductWithRelations = Product & {
   category?: Category | null
@@ -57,13 +61,12 @@ export async function getCategoryBySlug(
   )()
 }
 
-export async function getProducts(options: {
+function cachedCatalog(options: {
   locale: Locale
   categoryId?: number
-  search?: string
   limit?: number
 }): Promise<ProductWithRelations[]> {
-  const base = await unstable_cache(
+  return unstable_cache(
     () => fetchProducts(options),
     [
       'storefront',
@@ -74,15 +77,55 @@ export async function getProducts(options: {
     ],
     { revalidate: REVALIDATE_SECONDS, tags: ['products'] },
   )()
+}
 
-  // Search filters the cached catalog in-process: diacritic-insensitive
-  // ("tuica" matches "Țuică") and token-based ("gem prune" matches
-  // "Gem de prune"). At catalog sizes in the hundreds this is faster
-  // than an uncached DB LIKE query; revisit (e.g. Postgres unaccent)
-  // if the catalog grows to thousands.
+/** Load full product docs (with relations) for the given IDs, preserving order. */
+async function loadProductsByIds(
+  locale: Locale,
+  ids: number[],
+): Promise<ProductWithRelations[]> {
+  if (!ids.length) return []
+  const payload = await getPayloadClient()
+  const result = await payload.find({
+    collection: 'products',
+    locale,
+    where: { id: { in: ids } },
+    depth: 1,
+    limit: ids.length,
+    pagination: false,
+  })
+  const byId = new Map((result.docs as ProductWithRelations[]).map((d) => [d.id, d]))
+  return ids.map((id) => byId.get(id)).filter(Boolean) as ProductWithRelations[]
+}
+
+export async function getProducts(options: {
+  locale: Locale
+  categoryId?: number
+  search?: string
+  limit?: number
+}): Promise<ProductWithRelations[]> {
   const search = options.search?.trim()
-  if (!search) return base
-  return base.filter((product) => matchesSearch(product.title, search))
+  if (!search) return cachedCatalog(options)
+
+  // Diacritic-insensitive + typo-tolerant search at the database. Falls back
+  // to in-process filtering of the cached catalog if the search extensions
+  // are not installed yet (see scripts/setup-search.ts).
+  try {
+    const { ids } = await searchProductIds(options.locale, {
+      search,
+      categoryId: options.categoryId,
+      limit: SEARCH_MATCH_CAP,
+      offset: 0,
+    })
+    return loadProductsByIds(options.locale, ids)
+  } catch (err) {
+    console.warn(
+      '[search] DB search unavailable, using in-memory fallback:',
+      err instanceof Error ? err.message : err,
+    )
+    const base = await cachedCatalog(options)
+    return base.filter((product) => matchesSearch(product.title, search))
+  }
 }
 
 async function fetchProducts(options: {
@@ -127,16 +170,31 @@ export async function getProductsPage(options: {
   const page = Math.max(1, Math.floor(options.page ?? 1))
 
   if (search) {
-    // Diacritic-insensitive search over the cached catalog, paginated in-process.
-    const filtered = await getProducts({
-      locale: options.locale,
-      categoryId: options.categoryId,
-      search,
-    })
-    return {
-      docs: filtered.slice((page - 1) * SHOP_PAGE_SIZE, page * SHOP_PAGE_SIZE),
-      page,
-      totalPages: Math.max(1, Math.ceil(filtered.length / SHOP_PAGE_SIZE)),
+    // Diacritic-insensitive + typo-tolerant search, paginated at the database.
+    try {
+      const { ids, total } = await searchProductIds(options.locale, {
+        search,
+        categoryId: options.categoryId,
+        limit: SHOP_PAGE_SIZE,
+        offset: (page - 1) * SHOP_PAGE_SIZE,
+      })
+      return {
+        docs: await loadProductsByIds(options.locale, ids),
+        page,
+        totalPages: Math.max(1, Math.ceil(total / SHOP_PAGE_SIZE)),
+      }
+    } catch (err) {
+      console.warn(
+        '[search] DB search unavailable, using in-memory fallback:',
+        err instanceof Error ? err.message : err,
+      )
+      const base = await cachedCatalog({ locale: options.locale, categoryId: options.categoryId })
+      const filtered = base.filter((product) => matchesSearch(product.title, search))
+      return {
+        docs: filtered.slice((page - 1) * SHOP_PAGE_SIZE, page * SHOP_PAGE_SIZE),
+        page,
+        totalPages: Math.max(1, Math.ceil(filtered.length / SHOP_PAGE_SIZE)),
+      }
     }
   }
 
