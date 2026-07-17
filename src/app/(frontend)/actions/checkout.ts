@@ -10,6 +10,7 @@ import {
 export async function submitCheckout(
   customer: CheckoutCustomerInput,
   items: CartItem[],
+  locale?: string,
 ): Promise<CreateOrderResult> {
-  return createOrder({ customer, items })
+  return createOrder({ customer, items, locale })
 }

@@ -17,9 +17,14 @@ export function emailButton(href: string, label: string): string {
   `.trim()
 }
 
-export function emailLayout(content: string): string {
+export function emailLayout(
+  content: string,
+  opts: { lang?: string; tagline?: string } = {},
+): string {
+  const lang = opts.lang ?? 'ro'
+  const tagline = opts.tagline ?? 'Balkan House · Produse balcanice de calitate'
   return `<!DOCTYPE html>
-<html lang="ro">
+<html lang="${escapeHtml(lang)}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -42,7 +47,7 @@ export function emailLayout(content: string): string {
           </tr>
           <tr>
             <td style="padding:16px 24px;background-color:${BRAND.cream};border-top:1px solid ${BRAND.creamDark};text-align:center;font-size:12px;color:${BRAND.textMuted};">
-              Balkan House · Produse balcanice de calitate
+              ${escapeHtml(tagline)}
             </td>
           </tr>
         </table>

@@ -7,7 +7,11 @@ import { generateOrderNumber } from '@/lib/orders/order-number'
 import { computeLineTotalDkk, computeOrderTotals } from '@/lib/orders/order-totals'
 import { getActivePromotions } from '@/lib/storefront'
 import { getPromoPercentForProduct } from '@/lib/promotions'
+import { routing } from '@/i18n/routing'
 import type { Order } from '@/payload-types'
+
+const ROUTING_LOCALES: readonly string[] = routing.locales
+const DEFAULT_LOCALE: string = routing.defaultLocale
 
 export type CustomerAddressInput = {
   street: string
@@ -30,6 +34,8 @@ export type CheckoutCustomerInput = {
 export type CreateOrderInput = {
   customer: CheckoutCustomerInput
   items: CartItem[]
+  /** Shop language the customer ordered in; stored on the order for emails + payment return. */
+  locale?: string
 }
 
 export type CreateOrderResult =
@@ -84,6 +90,9 @@ async function buildVerifiedLineItems(items: CartItem[]) {
 
 export async function createOrder(input: CreateOrderInput): Promise<CreateOrderResult> {
   const { customer, items } = input
+  const locale = ROUTING_LOCALES.includes(input.locale as string)
+    ? (input.locale as string)
+    : DEFAULT_LOCALE
 
   if (!items.length) {
     return { ok: false, error: 'empty_cart' }
@@ -154,6 +163,7 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
         shippingCostDkk,
         discountDkk: 0,
         totalDkk,
+        locale,
       },
     })
 

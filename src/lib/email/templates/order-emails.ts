@@ -4,8 +4,21 @@ import { formatPriceDkk } from '@/lib/pricing'
 import type { Order } from '@/payload-types'
 
 import { emailButton, emailLayout, escapeHtml } from './layout'
+import { emailMessages, type EmailMessages } from './messages'
 
 type OrderLineItem = Order['lineItems'][number]
+
+function orderLocale(order: Order): string | null | undefined {
+  return (order as Order & { locale?: string | null }).locale
+}
+
+function messagesFor(order: Order): EmailMessages {
+  return emailMessages(orderLocale(order))
+}
+
+function layoutFor(order: Order, m: EmailMessages, content: string): string {
+  return emailLayout(content, { lang: m.lang, tagline: m.layoutTagline })
+}
 
 function customerName(order: Order): string {
   return `${order.customerFirstName} ${order.customerLastName}`.trim()
@@ -15,15 +28,15 @@ function isDelivery(order: Order): boolean {
   return order.shippingMethod === SHIPPING_METHOD.DELIVERY
 }
 
-function shippingMethodLabel(order: Order): string {
-  return isDelivery(order) ? 'Livrare la domiciliu' : 'Ridicare din magazin'
+function shippingMethodLabel(order: Order, m: EmailMessages): string {
+  return isDelivery(order) ? m.common.delivery : m.common.pickup
 }
 
 /**
  * A "shipping method" block reflecting what the customer actually chose,
  * including the delivery address for home-delivery orders.
  */
-function shippingBlock(order: Order): string {
+function shippingBlock(order: Order, m: EmailMessages): string {
   const addr = order.customerAddress
   const addressLine =
     isDelivery(order) && addr
@@ -42,13 +55,13 @@ function shippingBlock(order: Order): string {
 
   return `
     <p style="margin:16px 0 0;color:#5c4a42;line-height:1.6;font-size:14px;">
-      <strong>Metodă de livrare:</strong> ${escapeHtml(shippingMethodLabel(order))}${addressHtml}
+      <strong>${escapeHtml(m.common.shippingMethod)}:</strong> ${escapeHtml(shippingMethodLabel(order, m))}${addressHtml}
     </p>
   `.trim()
 }
 
-function unitLabel(unit: OrderLineItem['unit']): string {
-  return unit === 'kg' ? 'kg' : 'buc'
+function unitLabel(unit: OrderLineItem['unit'], m: EmailMessages): string {
+  return unit === 'kg' ? m.common.unitKg : m.common.unitPiece
 }
 
 function orderTotalDkk(order: Order): number {
@@ -95,16 +108,16 @@ function isLineAdjusted(item: LineItemForEmail): boolean {
   return false
 }
 
-function adjustmentBadge(): string {
+function adjustmentBadge(m: EmailMessages): string {
   return `
     <span style="display:inline-block;margin-top:4px;padding:2px 8px;background:#fff3e0;color:#b45309;border-radius:4px;font-size:11px;font-weight:600;">
-      Ajustat de magazin
+      ${escapeHtml(m.common.adjustedBadge)}
     </span>
   `.trim()
 }
 
-function quantityCell(item: LineItemForEmail): string {
-  const unit = unitLabel(item.unit)
+function quantityCell(item: LineItemForEmail, m: EmailMessages): string {
+  const unit = unitLabel(item.unit, m)
   const current = `${item.quantity} ${unit}`
 
   if (!isLineAdjusted(item)) {
@@ -115,13 +128,13 @@ function quantityCell(item: LineItemForEmail): string {
   const hasQtyChange = originalQty != null && originalQty !== item.quantity
 
   if (!hasQtyChange) {
-    return `${current}<br>${adjustmentBadge()}`
+    return `${current}<br>${adjustmentBadge(m)}`
   }
 
   return `
     <span style="text-decoration:line-through;color:#9a8a82;">${originalQty} ${unit}</span><br>
     ${current}<br>
-    ${adjustmentBadge()}
+    ${adjustmentBadge(m)}
   `.trim()
 }
 
@@ -145,7 +158,7 @@ function unitPriceCell(item: LineItemForEmail): string {
   `.trim()
 }
 
-function adminAdjustmentsNotice(order: Order): string {
+function adminAdjustmentsNotice(order: Order, m: EmailMessages): string {
   const hasAdjustments =
     order.hasAdminAdjustments === true ||
     normalizedLineItems(order).some((item) => isLineAdjusted(item as LineItemForEmail))
@@ -156,18 +169,18 @@ function adminAdjustmentsNotice(order: Order): string {
 
   return `
     <p style="margin:16px 0 0;padding:12px 16px;background-color:#fff8e6;border-left:4px solid #d97706;border-radius:8px;color:#5c4a42;line-height:1.6;font-size:14px;">
-      Cantitate/preț actualizat de magazin pentru unele produse din comandă.
+      ${escapeHtml(m.common.adjustmentsNotice)}
     </p>
   `.trim()
 }
 
-function lineItemsTable(order: Order): string {
+function lineItemsTable(order: Order, m: EmailMessages): string {
   const rows = normalizedLineItems(order)
     .map(
       (item) => `
         <tr>
           <td style="padding:8px 0;border-bottom:1px solid #e8dcc8;">${escapeHtml(item.productName as string)}</td>
-          <td style="padding:8px 0;border-bottom:1px solid #e8dcc8;text-align:center;line-height:1.5;">${quantityCell(item as LineItemForEmail)}</td>
+          <td style="padding:8px 0;border-bottom:1px solid #e8dcc8;text-align:center;line-height:1.5;">${quantityCell(item as LineItemForEmail, m)}</td>
           <td style="padding:8px 0;border-bottom:1px solid #e8dcc8;text-align:right;line-height:1.5;">${unitPriceCell(item as LineItemForEmail)}</td>
           <td style="padding:8px 0;border-bottom:1px solid #e8dcc8;text-align:right;">${escapeHtml(formatPriceDkk(item.lineTotalDkk))}</td>
         </tr>
@@ -176,17 +189,17 @@ function lineItemsTable(order: Order): string {
     .join('')
 
   return `
-    ${adminAdjustmentsNotice(order)}
+    ${adminAdjustmentsNotice(order, m)}
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:20px 0;font-size:14px;">
       <tr>
-        <th align="left" style="padding:8px 0;border-bottom:2px solid #6b1d2a;font-size:12px;text-transform:uppercase;color:#5c4a42;">Produs</th>
-        <th align="center" style="padding:8px 0;border-bottom:2px solid #6b1d2a;font-size:12px;text-transform:uppercase;color:#5c4a42;">Cant.</th>
-        <th align="right" style="padding:8px 0;border-bottom:2px solid #6b1d2a;font-size:12px;text-transform:uppercase;color:#5c4a42;">Preț</th>
-        <th align="right" style="padding:8px 0;border-bottom:2px solid #6b1d2a;font-size:12px;text-transform:uppercase;color:#5c4a42;">Total</th>
+        <th align="left" style="padding:8px 0;border-bottom:2px solid #6b1d2a;font-size:12px;text-transform:uppercase;color:#5c4a42;">${escapeHtml(m.common.tableProduct)}</th>
+        <th align="center" style="padding:8px 0;border-bottom:2px solid #6b1d2a;font-size:12px;text-transform:uppercase;color:#5c4a42;">${escapeHtml(m.common.tableQty)}</th>
+        <th align="right" style="padding:8px 0;border-bottom:2px solid #6b1d2a;font-size:12px;text-transform:uppercase;color:#5c4a42;">${escapeHtml(m.common.tablePrice)}</th>
+        <th align="right" style="padding:8px 0;border-bottom:2px solid #6b1d2a;font-size:12px;text-transform:uppercase;color:#5c4a42;">${escapeHtml(m.common.tableTotal)}</th>
       </tr>
       ${rows}
       <tr>
-        <td colspan="3" style="padding:12px 0 0;font-weight:600;">Total comandă</td>
+        <td colspan="3" style="padding:12px 0 0;font-weight:600;">${escapeHtml(m.common.orderTotal)}</td>
         <td style="padding:12px 0 0;text-align:right;font-weight:700;color:#6b1d2a;">${escapeHtml(formatPriceDkk(orderTotalDkk(order)))}</td>
       </tr>
     </table>
@@ -202,119 +215,120 @@ function orderReference(order: Order): string {
 }
 
 export function orderReceivedEmail(order: Order): { subject: string; html: string } {
-  const subject = `Comanda ${order.orderNumber} a fost primită — Balkan House`
+  const m = messagesFor(order)
+  const subject = m.received.subject(order.orderNumber)
 
   const content = `
-    <h2 style="margin:0 0 8px;font-size:20px;color:#2c1810;">Mulțumim, ${escapeHtml(order.customerFirstName)}!</h2>
+    <h2 style="margin:0 0 8px;font-size:20px;color:#2c1810;">${m.received.heading(escapeHtml(order.customerFirstName))}</h2>
     <p style="margin:0 0 16px;color:#5c4a42;line-height:1.6;">
-      Am primit comanda ta și o verificăm. Vei primi un link de plată pe email după confirmare.
+      ${escapeHtml(m.received.body)}
     </p>
-    <p style="margin:0 0 4px;font-size:13px;color:#5c4a42;">Număr comandă</p>
+    <p style="margin:0 0 4px;font-size:13px;color:#5c4a42;">${escapeHtml(m.common.orderNumber)}</p>
     ${orderReference(order)}
-    ${lineItemsTable(order)}
-    ${shippingBlock(order)}
+    ${lineItemsTable(order, m)}
+    ${shippingBlock(order, m)}
     <p style="margin:16px 0 0;color:#5c4a42;line-height:1.6;font-size:14px;">
-      Te contactăm dacă avem nevoie de detalii suplimentare.
+      ${escapeHtml(m.received.followup)}
     </p>
   `
 
-  return { subject, html: emailLayout(content) }
+  return { subject, html: layoutFor(order, m, content) }
 }
 
 export function paymentLinkEmail(order: Order, paymentLinkUrl: string): { subject: string; html: string } {
-  const subject = `Link de plată — comanda ${order.orderNumber}`
+  const m = messagesFor(order)
+  const subject = m.paymentLink.subject(order.orderNumber)
 
   const content = `
-    <h2 style="margin:0 0 8px;font-size:20px;color:#2c1810;">Salut, ${escapeHtml(order.customerFirstName)}!</h2>
+    <h2 style="margin:0 0 8px;font-size:20px;color:#2c1810;">${m.paymentLink.heading(escapeHtml(order.customerFirstName))}</h2>
     <p style="margin:0 0 16px;color:#5c4a42;line-height:1.6;">
-      Comanda ta a fost confirmată. Poți plăti acum folosind linkul de mai jos.
+      ${escapeHtml(m.paymentLink.body)}
     </p>
-    <p style="margin:0 0 4px;font-size:13px;color:#5c4a42;">Număr comandă</p>
+    <p style="margin:0 0 4px;font-size:13px;color:#5c4a42;">${escapeHtml(m.common.orderNumber)}</p>
     ${orderReference(order)}
-    ${lineItemsTable(order)}
-    ${shippingBlock(order)}
-    ${emailButton(paymentLinkUrl, 'Plătește acum')}
+    ${lineItemsTable(order, m)}
+    ${shippingBlock(order, m)}
+    ${emailButton(paymentLinkUrl, m.paymentLink.button)}
     <p style="margin:24px 0 0;color:#5c4a42;line-height:1.6;font-size:13px;">
-      Dacă butonul nu funcționează, copiază acest link în browser:<br>
+      ${escapeHtml(m.paymentLink.fallback)}<br>
       <a href="${escapeHtml(paymentLinkUrl)}" style="color:#6b1d2a;word-break:break-all;">${escapeHtml(paymentLinkUrl)}</a>
     </p>
   `
 
-  return { subject, html: emailLayout(content) }
+  return { subject, html: layoutFor(order, m, content) }
 }
 
 export function paymentConfirmedEmail(order: Order): { subject: string; html: string } {
-  const subject = `Plata confirmată — comanda ${order.orderNumber}`
+  const m = messagesFor(order)
+  const subject = m.paymentConfirmed.subject(order.orderNumber)
 
   const content = `
-    <h2 style="margin:0 0 8px;font-size:20px;color:#2c1810;">Plata a fost primită!</h2>
+    <h2 style="margin:0 0 8px;font-size:20px;color:#2c1810;">${escapeHtml(m.paymentConfirmed.heading)}</h2>
     <p style="margin:0 0 16px;color:#5c4a42;line-height:1.6;">
-      Mulțumim, ${escapeHtml(customerName(order))}. Am înregistrat plata pentru comanda ta.
+      ${m.paymentConfirmed.body(escapeHtml(customerName(order)))}
     </p>
-    <p style="margin:0 0 4px;font-size:13px;color:#5c4a42;">Număr comandă</p>
+    <p style="margin:0 0 4px;font-size:13px;color:#5c4a42;">${escapeHtml(m.common.orderNumber)}</p>
     ${orderReference(order)}
-    ${lineItemsTable(order)}
-    ${shippingBlock(order)}
+    ${lineItemsTable(order, m)}
+    ${shippingBlock(order, m)}
     <p style="margin:16px 0 0;color:#5c4a42;line-height:1.6;font-size:14px;">
-      ${
-        isDelivery(order)
-          ? 'Te anunțăm când comanda este expediată.'
-          : 'Te anunțăm când comanda este pregătită pentru ridicare din magazin.'
-      }
+      ${escapeHtml(isDelivery(order) ? m.paymentConfirmed.readyDelivery : m.paymentConfirmed.readyPickup)}
     </p>
   `
 
-  return { subject, html: emailLayout(content) }
+  return { subject, html: layoutFor(order, m, content) }
 }
 
 export function orderShippedEmail(order: Order): { subject: string; html: string } {
+  const m = messagesFor(order)
   const delivery = isDelivery(order)
 
   // Tracking numbers only make sense for delivery orders.
   const trackingBlock =
     delivery && order.trackingNumber
       ? `<p style="margin:16px 0 0;color:#5c4a42;line-height:1.6;">
-           Număr de urmărire: <strong>${escapeHtml(order.trackingNumber)}</strong>
+           ${escapeHtml(m.shipped.tracking)} <strong>${escapeHtml(order.trackingNumber)}</strong>
          </p>`
       : ''
 
   const subject = delivery
-    ? `Comanda ${order.orderNumber} a fost expediată`
-    : `Comanda ${order.orderNumber} este gata de ridicare`
+    ? m.shipped.subjectDelivery(order.orderNumber)
+    : m.shipped.subjectPickup(order.orderNumber)
 
-  const heading = delivery ? 'Comanda ta este pe drum!' : 'Comanda ta este gata de ridicare!'
+  const heading = delivery ? m.shipped.headingDelivery : m.shipped.headingPickup
 
   const body = delivery
-    ? `Salut, ${escapeHtml(order.customerFirstName)}. Comanda ${escapeHtml(order.orderNumber)} a fost expediată.`
-    : `Salut, ${escapeHtml(order.customerFirstName)}. Comanda ${escapeHtml(order.orderNumber)} te așteaptă la magazin.`
+    ? m.shipped.bodyDelivery(escapeHtml(order.customerFirstName), escapeHtml(order.orderNumber))
+    : m.shipped.bodyPickup(escapeHtml(order.customerFirstName), escapeHtml(order.orderNumber))
 
   const content = `
-    <h2 style="margin:0 0 8px;font-size:20px;color:#2c1810;">${heading}</h2>
+    <h2 style="margin:0 0 8px;font-size:20px;color:#2c1810;">${escapeHtml(heading)}</h2>
     <p style="margin:0 0 16px;color:#5c4a42;line-height:1.6;">
       ${body}
     </p>
     ${trackingBlock}
-    ${lineItemsTable(order)}
-    ${shippingBlock(order)}
+    ${lineItemsTable(order, m)}
+    ${shippingBlock(order, m)}
   `
 
-  return { subject, html: emailLayout(content) }
+  return { subject, html: layoutFor(order, m, content) }
 }
 
 export function orderCancelledEmail(order: Order): { subject: string; html: string } {
-  const subject = `Comanda ${order.orderNumber} a fost anulată`
+  const m = messagesFor(order)
+  const subject = m.cancelled.subject(order.orderNumber)
 
   const content = `
-    <h2 style="margin:0 0 8px;font-size:20px;color:#2c1810;">Comandă anulată</h2>
+    <h2 style="margin:0 0 8px;font-size:20px;color:#2c1810;">${escapeHtml(m.cancelled.heading)}</h2>
     <p style="margin:0 0 16px;color:#5c4a42;line-height:1.6;">
-      Salut, ${escapeHtml(order.customerFirstName)}. Comanda ${escapeHtml(order.orderNumber)} a fost anulată.
+      ${m.cancelled.body(escapeHtml(order.customerFirstName), escapeHtml(order.orderNumber))}
     </p>
-    <p style="margin:0 0 4px;font-size:13px;color:#5c4a42;">Număr comandă</p>
+    <p style="margin:0 0 4px;font-size:13px;color:#5c4a42;">${escapeHtml(m.common.orderNumber)}</p>
     ${orderReference(order)}
     <p style="margin:16px 0 0;color:#5c4a42;line-height:1.6;font-size:14px;">
-      Dacă ai întrebări, răspunde la acest email sau contactează-ne.
+      ${escapeHtml(m.cancelled.followup)}
     </p>
   `
 
-  return { subject, html: emailLayout(content) }
+  return { subject, html: layoutFor(order, m, content) }
 }

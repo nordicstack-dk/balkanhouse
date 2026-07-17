@@ -338,6 +338,10 @@ export interface Order {
   id: number;
   orderNumber: string;
   /**
+   * Shop language the customer ordered in (ro/da/en). Drives email language and the payment-return page.
+   */
+  locale?: string | null;
+  /**
    * Paid or shipped orders can be set to Cancelled after you issue a manual refund in Frisbii (Payment tab → Cancel order, or change status here and save).
    */
   status: 'awaiting_confirmation' | 'awaiting_payment' | 'paid' | 'shipped' | 'cancelled';
@@ -625,6 +629,7 @@ export interface PromotionsSelect<T extends boolean = true> {
  */
 export interface OrdersSelect<T extends boolean = true> {
   orderNumber?: T;
+  locale?: T;
   status?: T;
   customer?: T;
   customerFirstName?: T;

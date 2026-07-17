@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 
 import { submitCheckout } from '@/app/(frontend)/actions/checkout'
 import { useCart } from '@/components/cart/CartProvider'
@@ -18,6 +18,7 @@ const inputClassName =
 
 export function CheckoutForm() {
   const t = useTranslations('checkout')
+  const locale = useLocale()
   const router = useRouter()
   const { items, clearCart, hydrated } = useCart()
   const [firstName, setFirstName] = useState('')
@@ -88,6 +89,7 @@ export function CheckoutForm() {
         pickupNotes: shippingMethod === SHIPPING_METHOD.PICKUP ? pickupNotes : undefined,
       },
       items,
+      locale,
     )
 
     if (!result.ok) {

@@ -61,6 +61,16 @@ export const Orders: CollectionConfig = {
       },
     },
     {
+      name: 'locale',
+      type: 'text',
+      defaultValue: 'ro',
+      admin: {
+        readOnly: true,
+        position: 'sidebar',
+        description: 'Shop language the customer ordered in (ro/da/en). Drives email language and the payment-return page.',
+      },
+    },
+    {
       name: 'status',
       type: 'select',
       required: true,
