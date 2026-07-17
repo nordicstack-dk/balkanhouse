@@ -89,3 +89,43 @@ export const SHIPPING_METHOD_OPTIONS: { label: string; value: ShippingMethod }[]
   { label: 'Pickup in store', value: SHIPPING_METHOD.PICKUP },
   { label: 'Home delivery', value: SHIPPING_METHOD.DELIVERY },
 ]
+
+export const EMAIL_TYPE = {
+  ORDER_RECEIVED: 'order_received',
+  PAYMENT_LINK: 'payment_link',
+  PAYMENT_CONFIRMED: 'payment_confirmed',
+  ORDER_SHIPPED: 'order_shipped',
+  ORDER_CANCELLED: 'order_cancelled',
+} as const
+
+export type EmailType = (typeof EMAIL_TYPE)[keyof typeof EMAIL_TYPE]
+
+export const EMAIL_TYPE_OPTIONS: { label: string; value: EmailType }[] = [
+  { label: 'Order received', value: EMAIL_TYPE.ORDER_RECEIVED },
+  { label: 'Payment link', value: EMAIL_TYPE.PAYMENT_LINK },
+  { label: 'Payment confirmed', value: EMAIL_TYPE.PAYMENT_CONFIRMED },
+  { label: 'Order shipped', value: EMAIL_TYPE.ORDER_SHIPPED },
+  { label: 'Order cancelled', value: EMAIL_TYPE.ORDER_CANCELLED },
+]
+
+export const EMAIL_STATUS = {
+  SENT: 'sent',
+  DELIVERED: 'delivered',
+  OPENED: 'opened',
+  CLICKED: 'clicked',
+  BOUNCED: 'bounced',
+  COMPLAINED: 'complained',
+  FAILED: 'failed',
+} as const
+
+export type EmailStatus = (typeof EMAIL_STATUS)[keyof typeof EMAIL_STATUS]
+
+export const EMAIL_STATUS_OPTIONS: { label: string; value: EmailStatus }[] = [
+  { label: 'Sent', value: EMAIL_STATUS.SENT },
+  { label: 'Delivered', value: EMAIL_STATUS.DELIVERED },
+  { label: 'Opened', value: EMAIL_STATUS.OPENED },
+  { label: 'Clicked', value: EMAIL_STATUS.CLICKED },
+  { label: 'Bounced', value: EMAIL_STATUS.BOUNCED },
+  { label: 'Complained', value: EMAIL_STATUS.COMPLAINED },
+  { label: 'Failed', value: EMAIL_STATUS.FAILED },
+]

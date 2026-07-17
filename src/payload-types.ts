@@ -74,6 +74,7 @@ export interface Config {
     promotions: Promotion;
     orders: Order;
     customers: Customer;
+    'order-emails': OrderEmail;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -88,6 +89,7 @@ export interface Config {
     promotions: PromotionsSelect<false> | PromotionsSelect<true>;
     orders: OrdersSelect<false> | OrdersSelect<true>;
     customers: CustomersSelect<false> | CustomersSelect<true>;
+    'order-emails': OrderEmailsSelect<false> | OrderEmailsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -445,6 +447,36 @@ export interface Customer {
   createdAt: string;
 }
 /**
+ * Delivery status of order emails, tracked from Resend webhooks.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "order-emails".
+ */
+export interface OrderEmail {
+  id: number;
+  order: number | Order;
+  emailType: 'order_received' | 'payment_link' | 'payment_confirmed' | 'order_shipped' | 'order_cancelled';
+  /**
+   * Resend email id; used to match incoming webhook events.
+   */
+  resendId?: string | null;
+  to?: string | null;
+  subject?: string | null;
+  status: 'sent' | 'delivered' | 'opened' | 'clicked' | 'bounced' | 'complained' | 'failed';
+  sentAt?: string | null;
+  deliveredAt?: string | null;
+  openedAt?: string | null;
+  clickedAt?: string | null;
+  bouncedAt?: string | null;
+  lastEventAt?: string | null;
+  /**
+   * Latest bounce/failure detail reported by Resend, if any.
+   */
+  lastError?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
@@ -495,6 +527,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'customers';
         value: number | Customer;
+      } | null)
+    | ({
+        relationTo: 'order-emails';
+        value: number | OrderEmail;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -694,6 +730,27 @@ export interface CustomersSelect<T extends boolean = true> {
         postalCode?: T;
         country?: T;
       };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "order-emails_select".
+ */
+export interface OrderEmailsSelect<T extends boolean = true> {
+  order?: T;
+  emailType?: T;
+  resendId?: T;
+  to?: T;
+  subject?: T;
+  status?: T;
+  sentAt?: T;
+  deliveredAt?: T;
+  openedAt?: T;
+  clickedAt?: T;
+  bouncedAt?: T;
+  lastEventAt?: T;
+  lastError?: T;
   updatedAt?: T;
   createdAt?: T;
 }

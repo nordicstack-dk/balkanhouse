@@ -371,6 +371,15 @@ export const Orders: CollectionConfig = {
                 },
               },
             },
+            {
+              name: 'emailActivity',
+              type: 'ui',
+              admin: {
+                components: {
+                  Field: '@/components/admin/OrderEmailActivity#OrderEmailActivity',
+                },
+              },
+            },
           ],
         },
       ],
