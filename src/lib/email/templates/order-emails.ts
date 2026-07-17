@@ -1,3 +1,4 @@
+import { SHIPPING_METHOD } from '@/lib/contracts'
 import { computeOrderTotals } from '@/lib/orders/order-totals'
 import { formatPriceDkk } from '@/lib/pricing'
 import type { Order } from '@/payload-types'
@@ -8,6 +9,42 @@ type OrderLineItem = Order['lineItems'][number]
 
 function customerName(order: Order): string {
   return `${order.customerFirstName} ${order.customerLastName}`.trim()
+}
+
+function isDelivery(order: Order): boolean {
+  return order.shippingMethod === SHIPPING_METHOD.DELIVERY
+}
+
+function shippingMethodLabel(order: Order): string {
+  return isDelivery(order) ? 'Livrare la domiciliu' : 'Ridicare din magazin'
+}
+
+/**
+ * A "shipping method" block reflecting what the customer actually chose,
+ * including the delivery address for home-delivery orders.
+ */
+function shippingBlock(order: Order): string {
+  const addr = order.customerAddress
+  const addressLine =
+    isDelivery(order) && addr
+      ? [
+          addr.street,
+          [addr.postalCode, addr.city].filter(Boolean).join(' '),
+          addr.country,
+        ]
+          .filter(Boolean)
+          .join(', ')
+      : ''
+
+  const addressHtml = addressLine
+    ? `<br><span style="color:#5c4a42;">${escapeHtml(addressLine)}</span>`
+    : ''
+
+  return `
+    <p style="margin:16px 0 0;color:#5c4a42;line-height:1.6;font-size:14px;">
+      <strong>Metodă de livrare:</strong> ${escapeHtml(shippingMethodLabel(order))}${addressHtml}
+    </p>
+  `.trim()
 }
 
 function unitLabel(unit: OrderLineItem['unit']): string {
@@ -175,8 +212,9 @@ export function orderReceivedEmail(order: Order): { subject: string; html: strin
     <p style="margin:0 0 4px;font-size:13px;color:#5c4a42;">Număr comandă</p>
     ${orderReference(order)}
     ${lineItemsTable(order)}
+    ${shippingBlock(order)}
     <p style="margin:16px 0 0;color:#5c4a42;line-height:1.6;font-size:14px;">
-      Ridicare din magazin. Te contactăm dacă avem nevoie de detalii suplimentare.
+      Te contactăm dacă avem nevoie de detalii suplimentare.
     </p>
   `
 
@@ -194,6 +232,7 @@ export function paymentLinkEmail(order: Order, paymentLinkUrl: string): { subjec
     <p style="margin:0 0 4px;font-size:13px;color:#5c4a42;">Număr comandă</p>
     ${orderReference(order)}
     ${lineItemsTable(order)}
+    ${shippingBlock(order)}
     ${emailButton(paymentLinkUrl, 'Plătește acum')}
     <p style="margin:24px 0 0;color:#5c4a42;line-height:1.6;font-size:13px;">
       Dacă butonul nu funcționează, copiază acest link în browser:<br>
@@ -215,8 +254,13 @@ export function paymentConfirmedEmail(order: Order): { subject: string; html: st
     <p style="margin:0 0 4px;font-size:13px;color:#5c4a42;">Număr comandă</p>
     ${orderReference(order)}
     ${lineItemsTable(order)}
+    ${shippingBlock(order)}
     <p style="margin:16px 0 0;color:#5c4a42;line-height:1.6;font-size:14px;">
-      Te anunțăm când comanda este pregătită pentru ridicare sau expediere.
+      ${
+        isDelivery(order)
+          ? 'Te anunțăm când comanda este expediată.'
+          : 'Te anunțăm când comanda este pregătită pentru ridicare din magazin.'
+      }
     </p>
   `
 
@@ -224,21 +268,34 @@ export function paymentConfirmedEmail(order: Order): { subject: string; html: st
 }
 
 export function orderShippedEmail(order: Order): { subject: string; html: string } {
-  const trackingBlock = order.trackingNumber
-    ? `<p style="margin:16px 0 0;color:#5c4a42;line-height:1.6;">
-         Număr de urmărire: <strong>${escapeHtml(order.trackingNumber)}</strong>
-       </p>`
-    : ''
+  const delivery = isDelivery(order)
 
-  const subject = `Comanda ${order.orderNumber} a fost expediată`
+  // Tracking numbers only make sense for delivery orders.
+  const trackingBlock =
+    delivery && order.trackingNumber
+      ? `<p style="margin:16px 0 0;color:#5c4a42;line-height:1.6;">
+           Număr de urmărire: <strong>${escapeHtml(order.trackingNumber)}</strong>
+         </p>`
+      : ''
+
+  const subject = delivery
+    ? `Comanda ${order.orderNumber} a fost expediată`
+    : `Comanda ${order.orderNumber} este gata de ridicare`
+
+  const heading = delivery ? 'Comanda ta este pe drum!' : 'Comanda ta este gata de ridicare!'
+
+  const body = delivery
+    ? `Salut, ${escapeHtml(order.customerFirstName)}. Comanda ${escapeHtml(order.orderNumber)} a fost expediată.`
+    : `Salut, ${escapeHtml(order.customerFirstName)}. Comanda ${escapeHtml(order.orderNumber)} te așteaptă la magazin.`
 
   const content = `
-    <h2 style="margin:0 0 8px;font-size:20px;color:#2c1810;">Comanda ta este pe drum!</h2>
+    <h2 style="margin:0 0 8px;font-size:20px;color:#2c1810;">${heading}</h2>
     <p style="margin:0 0 16px;color:#5c4a42;line-height:1.6;">
-      Salut, ${escapeHtml(order.customerFirstName)}. Comanda ${escapeHtml(order.orderNumber)} a fost expediată.
+      ${body}
     </p>
     ${trackingBlock}
     ${lineItemsTable(order)}
+    ${shippingBlock(order)}
   `
 
   return { subject, html: emailLayout(content) }
