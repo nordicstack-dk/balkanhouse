@@ -7,7 +7,6 @@ import {
   paymentConfirmedEmail,
   paymentLinkEmail,
 } from '@/lib/email/templates/order-emails'
-import { getPayloadClient } from '@/lib/payload'
 import type { Order } from '@/payload-types'
 
 export type SendOrderEmailResult =
@@ -35,6 +34,10 @@ async function recordSentEmail(params: {
   resendId?: string
 }): Promise<void> {
   try {
+    // Imported lazily so this module doesn't statically pull in the Payload
+    // config, which would form a cycle (config → Orders → send-order-email →
+    // lib/payload → config).
+    const { getPayloadClient } = await import('@/lib/payload')
     const payload = await getPayloadClient()
     const now = new Date().toISOString()
     await payload.create({
