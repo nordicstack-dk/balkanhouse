@@ -22,7 +22,10 @@ import {
 import { syncOrderTotalsData } from '@/lib/orders/order-totals'
 import { sendPaymentLinkHandler } from '@/collections/endpoints/send-payment-link'
 import { cancelPaymentLinkHandler } from '@/collections/endpoints/cancel-payment-link'
+import { createLogger } from '@/lib/log'
 import type { Order } from '@/payload-types'
+
+const log = createLogger('orders')
 
 export const Orders: CollectionConfig = {
   slug: 'orders',
@@ -503,18 +506,36 @@ export const Orders: CollectionConfig = {
           return
         }
 
-        const send = (fn: (order: Order) => Promise<unknown>) => {
-          void fn(order).catch((err) => {
-            console.error('[email] status notification failed:', err)
-          })
+        log.info('status changed', {
+          orderNumber: order.orderNumber,
+          orderId: order.id,
+          from: prevStatus,
+          to: nextStatus,
+        })
+
+        // Await the send: this hook runs inside the admin's serverless request,
+        // which Vercel freezes once the request returns — a fire-and-forget
+        // promise would be killed before the Resend call leaves the instance
+        // (same failure mode as the checkout email). Errors are swallowed so a
+        // Resend hiccup never fails the status update.
+        const send = async (fn: (order: Order) => Promise<unknown>) => {
+          try {
+            await fn(order)
+          } catch (err) {
+            log.error('status notification email failed', {
+              orderId: order.id,
+              to: nextStatus,
+              err,
+            })
+          }
         }
 
         if (nextStatus === ORDER_STATUS.PAID) {
-          send(sendPaymentConfirmed)
+          await send(sendPaymentConfirmed)
         } else if (nextStatus === ORDER_STATUS.SHIPPED) {
-          send(sendOrderShipped)
+          await send(sendOrderShipped)
         } else if (nextStatus === ORDER_STATUS.CANCELLED) {
-          send(sendOrderCancelled)
+          await send(sendOrderCancelled)
         }
       },
     ],

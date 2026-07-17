@@ -1,7 +1,10 @@
 import { ORDER_STATUS } from '@/lib/contracts'
+import { createLogger } from '@/lib/log'
 import { getPaymentGateway } from '@/lib/payment'
 import { getPayloadClient } from '@/lib/payload'
 import type { Order } from '@/payload-types'
+
+const log = createLogger('cancel-payment-link')
 
 export type CancelOrderPaymentSessionResult =
   | {
@@ -66,6 +69,8 @@ export async function cancelPaymentLink(
 ): Promise<CancelPaymentLinkResult> {
   const payload = await getPayloadClient()
 
+  log.info('requested', { orderId })
+
   let order: Order
   try {
     order = (await payload.findByID({
@@ -73,10 +78,12 @@ export async function cancelPaymentLink(
       id: orderId,
     })) as Order
   } catch {
+    log.warn('rejected', { orderId, reason: 'order_not_found' })
     return { ok: false, error: 'Order not found', status: 404 }
   }
 
   if (order.status !== ORDER_STATUS.AWAITING_PAYMENT) {
+    log.warn('rejected', { orderId, reason: 'wrong_status', status: order.status })
     return {
       ok: false,
       error: `Order must be in "${ORDER_STATUS.AWAITING_PAYMENT}" status (current: ${order.status})`,
@@ -86,6 +93,7 @@ export async function cancelPaymentLink(
 
   const sessionResult = await cancelOrderPaymentSession(order)
   if (!sessionResult.ok) {
+    log.error('gateway session cancel failed', { orderId, error: sessionResult.error })
     return {
       ok: false,
       error: sessionResult.error,
@@ -103,6 +111,13 @@ export async function cancelPaymentLink(
       paymentLinkSentAt: null,
     },
   })) as Order
+
+  log.info('cancelled', {
+    orderId: updated.id,
+    orderNumber: updated.orderNumber,
+    sessionCancelled: sessionResult.sessionCancelled,
+    sessionNotFound: sessionResult.sessionNotFound,
+  })
 
   return {
     ok: true,

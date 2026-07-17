@@ -1,7 +1,10 @@
 import { ORDER_STATUS } from '@/lib/contracts'
+import { createLogger } from '@/lib/log'
 import { cancelOrderPaymentSession } from '@/lib/orders/cancel-payment-link'
 import { getPayloadClient } from '@/lib/payload'
 import type { Order } from '@/payload-types'
+
+const log = createLogger('expire-payment-links')
 
 export function getPaymentLinkExpiryHours(): number {
   const raw = process.env.PAYMENT_LINK_EXPIRY_HOURS
@@ -27,6 +30,8 @@ export async function expirePaymentLinks(): Promise<ExpirePaymentLinksResult> {
   const payload = await getPayloadClient()
   const expiryHours = getPaymentLinkExpiryHours()
   const cutoff = new Date(Date.now() - expiryHours * 60 * 60 * 1000)
+
+  log.info('run started', { expiryHours, cutoff: cutoff.toISOString() })
 
   const orderNumbers: string[] = []
   const skipped: ExpirePaymentLinksResult['skipped'] = []
@@ -58,7 +63,7 @@ export async function expirePaymentLinks(): Promise<ExpirePaymentLinksResult> {
       const sessionResult = await cancelOrderPaymentSession(order)
       if (!sessionResult.ok) {
         skipped.push({ orderNumber: order.orderNumber, error: sessionResult.error })
-        console.error('[expire-payment-links] session cancel failed', {
+        log.error('session cancel failed', {
           orderNumber: order.orderNumber,
           error: sessionResult.error,
         })
@@ -77,7 +82,7 @@ export async function expirePaymentLinks(): Promise<ExpirePaymentLinksResult> {
       })
 
       orderNumbers.push(order.orderNumber)
-      console.log('[expire-payment-links] expired', {
+      log.info('expired', {
         orderNumber: order.orderNumber,
         sessionCancelled: sessionResult.sessionCancelled,
         sessionNotFound: sessionResult.sessionNotFound,
@@ -90,6 +95,8 @@ export async function expirePaymentLinks(): Promise<ExpirePaymentLinksResult> {
 
     page += 1
   }
+
+  log.info('run finished', { expired: orderNumbers.length, skipped: skipped.length })
 
   return {
     expired: orderNumbers.length,

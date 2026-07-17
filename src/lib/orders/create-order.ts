@@ -1,6 +1,9 @@
+import { after } from 'next/server'
+
 import { ORDER_STATUS, SHIPPING_METHOD, STOCK_STATUS, type ShippingMethod } from '@/lib/contracts'
 import type { CartItem } from '@/lib/cart'
 import { sendOrderReceived } from '@/lib/email/send-order-email'
+import { createLogger } from '@/lib/log'
 import { applyPromo } from '@/lib/pricing'
 import { getPayloadClient } from '@/lib/payload'
 import { generateOrderNumber } from '@/lib/orders/order-number'
@@ -9,6 +12,8 @@ import { getActivePromotions } from '@/lib/storefront'
 import { getPromoPercentForProduct } from '@/lib/promotions'
 import { routing } from '@/i18n/routing'
 import type { Order } from '@/payload-types'
+
+const log = createLogger('checkout')
 
 const ROUTING_LOCALES: readonly string[] = routing.locales
 const DEFAULT_LOCALE: string = routing.defaultLocale
@@ -94,7 +99,14 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
     ? (input.locale as string)
     : DEFAULT_LOCALE
 
+  log.info('order requested', {
+    itemCount: items.length,
+    shippingMethod: customer?.shippingMethod,
+    locale,
+  })
+
   if (!items.length) {
+    log.warn('order rejected', { reason: 'empty_cart' })
     return { ok: false, error: 'empty_cart' }
   }
 
@@ -104,15 +116,18 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
   const phone = customer.phone.trim()
 
   if (!firstName || !lastName || !email || !phone) {
+    log.warn('order rejected', { reason: 'missing_fields' })
     return { ok: false, error: 'missing_fields' }
   }
 
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    log.warn('order rejected', { reason: 'invalid_email', email })
     return { ok: false, error: 'invalid_email' }
   }
 
   const shippingMethod = customer.shippingMethod
   if (shippingMethod !== SHIPPING_METHOD.PICKUP && shippingMethod !== SHIPPING_METHOD.DELIVERY) {
+    log.warn('order rejected', { reason: 'missing_fields', shippingMethod })
     return { ok: false, error: 'missing_fields' }
   }
 
@@ -127,6 +142,7 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
     const postalCode = customer.address?.postalCode.trim() ?? ''
 
     if (!street || !city || !postalCode) {
+      log.warn('order rejected', { reason: 'missing_address' })
       return { ok: false, error: 'missing_address' }
     }
 
@@ -136,6 +152,7 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
   try {
     const lineItems = await buildVerifiedLineItems(items)
     if (!lineItems) {
+      log.warn('order rejected', { reason: 'unavailable_products', email })
       return { ok: false, error: 'unavailable_products' }
     }
 
@@ -167,13 +184,41 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
       },
     })
 
-    void sendOrderReceived(order as Order).catch((err) => {
-      console.error('[email] order received failed:', err)
+    log.info('order created', {
+      orderNumber: order.orderNumber,
+      orderId: order.id,
+      email,
+      shippingMethod,
+      itemCount: lineItems.length,
+      totalDkk,
     })
+
+    // Send the confirmation email after the HTTP response is flushed. On Vercel
+    // the serverless function is frozen the moment this action returns, which
+    // kills a bare fire-and-forget promise before the Resend request ever leaves
+    // the instance (the email silently never sends — works locally because the
+    // Node process persists). after() registers the work with the runtime's
+    // waitUntil so the function stays alive for it, without slowing checkout.
+    const dispatchOrderEmail = () => {
+      log.info('dispatching order-received email', {
+        orderNumber: order.orderNumber,
+        orderId: order.id,
+        email,
+      })
+      return sendOrderReceived(order as Order).catch((err) => {
+        log.error('order-received email failed', { orderId: order.id, email, err })
+      })
+    }
+    try {
+      after(dispatchOrderEmail)
+    } catch {
+      // Not inside a request scope (e.g. the smoke-test script) — send inline.
+      void dispatchOrderEmail()
+    }
 
     return { ok: true, orderNumber: order.orderNumber, orderId: order.id }
   } catch (err) {
-    console.error('createOrder failed:', err)
+    log.error('order creation failed', { email, err })
     return { ok: false, error: 'server_error' }
   }
 }

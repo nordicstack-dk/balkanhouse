@@ -1,5 +1,6 @@
 import { EMAIL_STATUS, EMAIL_TYPE, type EmailType } from '@/lib/contracts'
 import { getFromEmail, getResendClient } from '@/lib/email/resend'
+import { createLogger } from '@/lib/log'
 import {
   orderCancelledEmail,
   orderReceivedEmail,
@@ -8,6 +9,8 @@ import {
   paymentLinkEmail,
 } from '@/lib/email/templates/order-emails'
 import type { Order } from '@/payload-types'
+
+const log = createLogger('email')
 
 export type SendOrderEmailResult =
   | { ok: true; id?: string }
@@ -54,7 +57,11 @@ async function recordSentEmail(params: {
       },
     })
   } catch (err) {
-    console.error('[email] failed to record order-emails row:', err)
+    log.error('failed to record order-emails row', {
+      orderId: params.order.id,
+      emailType: params.emailType,
+      err,
+    })
   }
 }
 
@@ -62,9 +69,11 @@ async function sendOrderEmail(params: SendOrderEmailParams): Promise<SendOrderEm
   const { order, emailType, to, subject, html } = params
   const client = getResendClient()
   if (!client) {
-    console.warn('[email] RESEND_API_KEY not configured; skipping:', subject, '→', to)
+    log.warn('RESEND_API_KEY not configured; skipping send', { emailType, to, orderId: order.id })
     return { ok: false, error: 'not_configured' }
   }
+
+  log.info('sending', { emailType, to, orderId: order.id, from: getFromEmail() })
 
   try {
     const { data, error } = await client.emails.send({
@@ -81,15 +90,17 @@ async function sendOrderEmail(params: SendOrderEmailParams): Promise<SendOrderEm
     })
 
     if (error) {
-      console.error('[email] Resend error:', { to, subject, error })
+      log.error('Resend rejected send', { emailType, to, orderId: order.id, error: error.message })
       return { ok: false, error: error.message }
     }
+
+    log.info('sent', { emailType, to, orderId: order.id, resendId: data?.id })
 
     await recordSentEmail({ order, emailType, to, subject, resendId: data?.id })
 
     return { ok: true, id: data?.id }
   } catch (err) {
-    console.error('[email] send failed:', { to, subject, err })
+    log.error('send threw', { emailType, to, orderId: order.id, err })
     const message = err instanceof Error ? err.message : 'send_failed'
     return { ok: false, error: message }
   }
@@ -103,6 +114,7 @@ function recipient(order: Order): string | null {
 export async function sendOrderReceived(order: Order): Promise<SendOrderEmailResult> {
   const to = recipient(order)
   if (!to) {
+    log.warn('skipping send: order has no customer email', { orderId: order.id })
     return { ok: false, error: 'missing_email' }
   }
 
@@ -116,6 +128,7 @@ export async function sendPaymentLink(
 ): Promise<SendOrderEmailResult> {
   const to = recipient(order)
   if (!to) {
+    log.warn('skipping send: order has no customer email', { orderId: order.id })
     return { ok: false, error: 'missing_email' }
   }
 
@@ -126,6 +139,7 @@ export async function sendPaymentLink(
 export async function sendPaymentConfirmed(order: Order): Promise<SendOrderEmailResult> {
   const to = recipient(order)
   if (!to) {
+    log.warn('skipping send: order has no customer email', { orderId: order.id })
     return { ok: false, error: 'missing_email' }
   }
 
@@ -136,6 +150,7 @@ export async function sendPaymentConfirmed(order: Order): Promise<SendOrderEmail
 export async function sendOrderShipped(order: Order): Promise<SendOrderEmailResult> {
   const to = recipient(order)
   if (!to) {
+    log.warn('skipping send: order has no customer email', { orderId: order.id })
     return { ok: false, error: 'missing_email' }
   }
 
@@ -146,6 +161,7 @@ export async function sendOrderShipped(order: Order): Promise<SendOrderEmailResu
 export async function sendOrderCancelled(order: Order): Promise<SendOrderEmailResult> {
   const to = recipient(order)
   if (!to) {
+    log.warn('skipping send: order has no customer email', { orderId: order.id })
     return { ok: false, error: 'missing_email' }
   }
 

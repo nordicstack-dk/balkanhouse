@@ -2,12 +2,15 @@ import { routing, type Locale } from '@/i18n/routing'
 import { ORDER_STATUS } from '@/lib/contracts'
 import { sendPaymentLink as sendPaymentLinkEmail } from '@/lib/email/send-order-email'
 import { getPaymentGateway } from '@/lib/payment'
+import { createLogger } from '@/lib/log'
 import { computeOrderTotals } from '@/lib/orders/order-totals'
 import { getPayloadClient } from '@/lib/payload'
 import { getServerUrl } from '@/lib/server-url'
 import type { Order } from '@/payload-types'
 
 const PAYMENT_PROVIDER = 'flatpay'
+
+const log = createLogger('payment-link')
 
 export type SendPaymentLinkResult =
   | {
@@ -40,6 +43,8 @@ function buildReturnUrl(order: Order): string {
 export async function sendPaymentLink(orderId: number | string): Promise<SendPaymentLinkResult> {
   const payload = await getPayloadClient()
 
+  log.info('requested', { orderId })
+
   let order: Order
   try {
     order = (await payload.findByID({
@@ -47,10 +52,12 @@ export async function sendPaymentLink(orderId: number | string): Promise<SendPay
       id: orderId,
     })) as Order
   } catch {
+    log.warn('rejected', { orderId, reason: 'order_not_found' })
     return { ok: false, error: 'Order not found', status: 404 }
   }
 
   if (order.status !== ORDER_STATUS.AWAITING_CONFIRMATION) {
+    log.warn('rejected', { orderId, reason: 'wrong_status', status: order.status })
     return {
       ok: false,
       error: `Order must be in "${ORDER_STATUS.AWAITING_CONFIRMATION}" status (current: ${order.status})`,
@@ -59,6 +66,7 @@ export async function sendPaymentLink(orderId: number | string): Promise<SendPay
   }
 
   if (!order.customerEmail?.trim()) {
+    log.warn('rejected', { orderId, reason: 'missing_email' })
     return { ok: false, error: 'Order is missing customer email', status: 400 }
   }
 
@@ -86,6 +94,7 @@ export async function sendPaymentLink(orderId: number | string): Promise<SendPay
   }
 
   if (order.totalDkk <= 0) {
+    log.warn('rejected', { orderId, reason: 'zero_total', totalDkk: order.totalDkk })
     return { ok: false, error: 'Order total must be greater than zero', status: 400 }
   }
 
@@ -96,6 +105,12 @@ export async function sendPaymentLink(orderId: number | string): Promise<SendPay
     currency: 'DKK',
     customerEmail: order.customerEmail,
     returnUrl: buildReturnUrl(order),
+  })
+
+  log.info('gateway link created', {
+    orderId: order.id,
+    orderNumber: order.orderNumber,
+    paymentReference,
   })
 
   const updated = (await payload.update({
@@ -112,12 +127,13 @@ export async function sendPaymentLink(orderId: number | string): Promise<SendPay
 
   const emailResult = await sendPaymentLinkEmail(updated, paymentLinkUrl)
   if (!emailResult.ok) {
-    console.error(
-      '[email] payment link email failed:',
-      emailResult.error,
-      '→',
-      updated.customerEmail,
-    )
+    log.error('email failed', {
+      orderId: updated.id,
+      to: updated.customerEmail,
+      error: emailResult.error,
+    })
+  } else {
+    log.info('sent', { orderId: updated.id, orderNumber: updated.orderNumber })
   }
 
   return {
