@@ -1,4 +1,5 @@
 import { ORDER_STATUS } from '@/lib/contracts'
+import { sendOrderCancelled } from '@/lib/email/send-order-email'
 import { createLogger } from '@/lib/log'
 import { cancelOrderPaymentSession } from '@/lib/orders/cancel-payment-link'
 import { getPayloadClient } from '@/lib/payload'
@@ -70,7 +71,13 @@ export async function expirePaymentLinks(): Promise<ExpirePaymentLinksResult> {
         continue
       }
 
-      await payload.update({
+      // skipStatusEmail: the afterChange hook would email inside this update's
+      // transaction (pre-commit). On a long cron run that can roll back, which
+      // would fire the cancellation email while leaving the order still
+      // awaiting_payment — so it re-expires and re-emails every run. Instead we
+      // suppress the hook and send below, only after the update has committed
+      // (payload.update resolves post-commit; it rejects if the commit failed).
+      const cancelled = (await payload.update({
         collection: 'orders',
         id: order.id,
         data: {
@@ -79,13 +86,20 @@ export async function expirePaymentLinks(): Promise<ExpirePaymentLinksResult> {
           paymentReference: null,
           paymentLinkSentAt: null,
         },
-      })
+        context: { skipStatusEmail: true },
+      })) as Order
 
       orderNumbers.push(order.orderNumber)
       log.info('expired', {
         orderNumber: order.orderNumber,
         sessionCancelled: sessionResult.sessionCancelled,
         sessionNotFound: sessionResult.sessionNotFound,
+      })
+
+      // Best-effort, post-commit: a Resend hiccup must not fail the run, and the
+      // order is already cancelled so it won't be re-selected next run.
+      await sendOrderCancelled(cancelled).catch((err) => {
+        log.error('cancellation email failed', { orderId: cancelled.id, err })
       })
     }
 

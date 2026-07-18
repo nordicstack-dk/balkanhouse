@@ -493,7 +493,7 @@ export const Orders: CollectionConfig = {
       },
     ],
     afterChange: [
-      async ({ doc, previousDoc, operation }) => {
+      async ({ doc, previousDoc, operation, context }) => {
         if (operation !== 'update' || !previousDoc) {
           return
         }
@@ -512,6 +512,15 @@ export const Orders: CollectionConfig = {
           from: prevStatus,
           to: nextStatus,
         })
+
+        // afterChange runs inside the update's DB transaction, before commit.
+        // A caller that must not emit a phantom email if that transaction rolls
+        // back (e.g. the long-running expiry cron) sets skipStatusEmail and
+        // sends the email itself after the update has committed.
+        if (context?.skipStatusEmail) {
+          log.info('status email deferred to caller', { orderId: order.id, to: nextStatus })
+          return
+        }
 
         // Await the send: this hook runs inside the admin's serverless request,
         // which Vercel freezes once the request returns — a fire-and-forget
