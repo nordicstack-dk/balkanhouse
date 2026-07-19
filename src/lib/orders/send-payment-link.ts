@@ -1,14 +1,12 @@
 import { routing, type Locale } from '@/i18n/routing'
 import { ORDER_STATUS } from '@/lib/contracts'
 import { sendPaymentLink as sendPaymentLinkEmail } from '@/lib/email/send-order-email'
-import { getPaymentGateway } from '@/lib/payment'
-import { createLogger } from '@/lib/log'
+import { getPaymentGateway, PAYMENT_PROVIDER } from '@/lib/payment'
+import { createLogger, maskEmail } from '@/lib/log'
 import { computeOrderTotals } from '@/lib/orders/order-totals'
 import { getPayloadClient } from '@/lib/payload'
 import { getServerUrl } from '@/lib/server-url'
 import type { Order } from '@/payload-types'
-
-const PAYMENT_PROVIDER = 'flatpay'
 
 const log = createLogger('payment-link')
 
@@ -129,7 +127,7 @@ export async function sendPaymentLink(orderId: number | string): Promise<SendPay
   if (!emailResult.ok) {
     log.error('email failed', {
       orderId: updated.id,
-      to: updated.customerEmail,
+      to: maskEmail(updated.customerEmail),
       error: emailResult.error,
     })
   } else {

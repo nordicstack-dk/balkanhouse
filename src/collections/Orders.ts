@@ -67,6 +67,12 @@ export const Orders: CollectionConfig = {
       name: 'locale',
       type: 'text',
       defaultValue: 'ro',
+      // Kept as text (not a select) to avoid a column-type change on db push;
+      // validate constrains it to the routing locales instead (audit F33).
+      validate: (value: unknown) =>
+        value == null || (typeof value === 'string' && ['ro', 'da', 'en'].includes(value))
+          ? true
+          : 'Locale must be one of ro, da, en',
       admin: {
         readOnly: true,
         position: 'sidebar',
@@ -77,6 +83,8 @@ export const Orders: CollectionConfig = {
       name: 'status',
       type: 'select',
       required: true,
+      // Indexed: filtered on every expiry-cron run and payment-path guard (audit F16).
+      index: true,
       defaultValue: ORDER_STATUS.AWAITING_CONFIRMATION,
       options: ORDER_STATUS_OPTIONS,
       admin: {
@@ -108,6 +116,8 @@ export const Orders: CollectionConfig = {
               name: 'customerLastName',
               type: 'text',
               required: true,
+              // Indexed: an admin list-search field (audit F17).
+              index: true,
             },
             {
               name: 'customerPhone',
@@ -118,6 +128,8 @@ export const Orders: CollectionConfig = {
               name: 'customerEmail',
               type: 'email',
               required: true,
+              // Indexed: an admin list-search field and common support lookup (audit F17).
+              index: true,
             },
           ],
         },
@@ -342,6 +354,8 @@ export const Orders: CollectionConfig = {
             {
               name: 'paymentReference',
               type: 'text',
+              // Indexed: the primary order lookup key on every incoming webhook (audit F15).
+              index: true,
               admin: {
                 readOnly: true,
               },

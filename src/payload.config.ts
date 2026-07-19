@@ -28,6 +28,18 @@ const dirname = path.dirname(filename)
  */
 function resolveDatabaseUrl(): string {
   const url = process.env.DATABASE_URL || ''
+
+  // On serverless, each concurrent invocation opens its own pool; safety depends
+  // on DATABASE_URL pointing at Neon's pooled (`-pooler`) endpoint. Warn loudly
+  // in production if it does not, so a direct-endpoint misconfiguration can't
+  // silently exhaust Neon connections under load (audit F23).
+  if (process.env.NODE_ENV === 'production' && url && !/-pooler\./.test(url)) {
+    console.warn(
+      '[db] DATABASE_URL does not look like a Neon pooler endpoint (-pooler). ' +
+        'Use the pooled connection string on serverless to avoid connection exhaustion.',
+    )
+  }
+
   return url.replace(/([?&]sslmode=)(prefer|require|verify-ca)\b/i, '$1verify-full')
 }
 
@@ -50,9 +62,19 @@ export default buildConfig({
   typescript: {
     outputFile: path.resolve(dirname, 'payload-types.ts'),
   },
+  // GraphQL is unused (the storefront uses the local API; the admin uses REST),
+  // so disable it entirely to remove the endpoint and playground surface (audit F34).
+  graphQL: {
+    disable: true,
+  },
   db: postgresAdapter({
     pool: {
       connectionString: resolveDatabaseUrl(),
+      // Serverless-tuned pool: small per-instance cap plus timeouts so a slow
+      // gateway or spike can't pile up idle connections (audit F23).
+      max: 3,
+      idleTimeoutMillis: 30_000,
+      connectionTimeoutMillis: 10_000,
     },
     push: process.env.PAYLOAD_DISABLE_DB_PUSH !== 'true',
   }),

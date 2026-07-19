@@ -8,9 +8,6 @@ import { getPayloadClient } from './payload'
 import { matchesSearch } from './search'
 import { searchProductIds } from './search-db'
 
-// Cap for how many search matches a non-paginated (category) search returns.
-const SEARCH_MATCH_CAP = 500
-
 export type ProductWithRelations = Product & {
   category?: Category | null
   images?: Media[] | null
@@ -96,36 +93,6 @@ async function loadProductsByIds(
   })
   const byId = new Map((result.docs as ProductWithRelations[]).map((d) => [d.id, d]))
   return ids.map((id) => byId.get(id)).filter(Boolean) as ProductWithRelations[]
-}
-
-export async function getProducts(options: {
-  locale: Locale
-  categoryId?: number
-  search?: string
-  limit?: number
-}): Promise<ProductWithRelations[]> {
-  const search = options.search?.trim()
-  if (!search) return cachedCatalog(options)
-
-  // Diacritic-insensitive + typo-tolerant search at the database. Falls back
-  // to in-process filtering of the cached catalog if the search extensions
-  // are not installed yet (see scripts/setup-search.ts).
-  try {
-    const { ids } = await searchProductIds(options.locale, {
-      search,
-      categoryId: options.categoryId,
-      limit: SEARCH_MATCH_CAP,
-      offset: 0,
-    })
-    return loadProductsByIds(options.locale, ids)
-  } catch (err) {
-    console.warn(
-      '[search] DB search unavailable, using in-memory fallback:',
-      err instanceof Error ? err.message : err,
-    )
-    const base = await cachedCatalog(options)
-    return base.filter((product) => matchesSearch(product.title, search))
-  }
 }
 
 async function fetchProducts(options: {

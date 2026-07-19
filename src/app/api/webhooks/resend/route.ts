@@ -25,8 +25,14 @@ export async function POST(request: Request) {
         'svix-signature': request.headers.get('svix-signature') ?? '',
       }
       event = new Webhook(secret).verify(rawBody, headers) as ResendWebhookEvent
+    } else if (process.env.NODE_ENV === 'production') {
+      // Fail closed: don't trust an unsigned body in production (audit F9).
+      console.error('[resend webhook] RESEND_WEBHOOK_SECRET not set — refusing unverified webhook')
+      return Response.json({ error: 'Webhook not configured' }, { status: 500 })
     } else {
-      console.warn('[resend webhook] RESEND_WEBHOOK_SECRET not set; skipping signature verification')
+      console.warn(
+        '[resend webhook] RESEND_WEBHOOK_SECRET not set; skipping signature verification (non-production only)',
+      )
       event = JSON.parse(rawBody) as ResendWebhookEvent
     }
   } catch (err) {

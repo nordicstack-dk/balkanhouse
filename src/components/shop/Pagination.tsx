@@ -6,6 +6,8 @@ type PaginationProps = {
   page: number
   totalPages: number
   query?: string
+  /** Route the page links target; defaults to the flat shop page. */
+  basePath?: string
 }
 
 function pageNumbers(page: number, totalPages: number): (number | 'gap')[] {
@@ -29,13 +31,13 @@ function pageNumbers(page: number, totalPages: number): (number | 'gap')[] {
 const pageLinkClassName =
   'flex h-10 min-w-10 items-center justify-center rounded-lg border px-2 text-sm font-medium transition-colors'
 
-export function Pagination({ page, totalPages, query }: PaginationProps) {
+export function Pagination({ page, totalPages, query, basePath = '/shop' }: PaginationProps) {
   const t = useTranslations('shop')
 
   if (totalPages <= 1) return null
 
   const href = (p: number) => ({
-    pathname: '/shop' as const,
+    pathname: basePath,
     query: {
       ...(query ? { q: query } : {}),
       ...(p > 1 ? { page: String(p) } : {}),

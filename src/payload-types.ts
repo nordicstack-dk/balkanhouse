@@ -437,11 +437,14 @@ export interface Customer {
   lastName: string;
   phone: string;
   email: string;
-  address: {
-    street: string;
-    city: string;
-    postalCode: string;
-    country: string;
+  /**
+   * Present for delivery orders; empty for pickup customers.
+   */
+  address?: {
+    street?: string | null;
+    city?: string | null;
+    postalCode?: string | null;
+    country?: string | null;
   };
   updatedAt: string;
   createdAt: string;

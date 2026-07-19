@@ -1,10 +1,10 @@
 import { ORDER_STATUS } from '@/lib/contracts'
-import { verifyPaymentOnReturn } from '@/lib/orders/verify-payment-return'
 import { getPayloadClient } from '@/lib/payload'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 
 import { Link } from '@/i18n/navigation'
 import type { Locale } from '@/i18n/routing'
+import type { Order } from '@/payload-types'
 
 type Props = {
   params: Promise<{ locale: string }>
@@ -21,10 +21,19 @@ export default async function CheckoutConfirmationPage({ params, searchParams }:
   let paymentVerified = false
 
   if (orderNumber) {
+    // Read-only: the Frisbii webhook is the source of truth for paid status
+    // (audit F26, decision 8). This page no longer performs a gateway call or a
+    // DB write during render — it only reflects the current order status, so it
+    // is safe under RSC re-invocation and cannot be used to probe/mutate state.
     const payload = await getPayloadClient()
-    const verification = await verifyPaymentOnReturn(payload, orderNumber)
-    paymentVerified =
-      verification.applied || verification.order?.status === ORDER_STATUS.PAID
+    const result = await payload.find({
+      collection: 'orders',
+      where: { orderNumber: { equals: orderNumber } },
+      limit: 1,
+      depth: 0,
+    })
+    const order = result.docs[0] as Order | undefined
+    paymentVerified = order?.status === ORDER_STATUS.PAID
   }
 
   const isPaymentConfirmation = paymentVerified

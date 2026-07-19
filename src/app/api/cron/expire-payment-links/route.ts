@@ -1,4 +1,19 @@
+import { timingSafeEqual } from 'node:crypto'
+
 import { expirePaymentLinks } from '@/lib/orders/expire-payment-links'
+
+// Give the cron room to drain a backlog without the platform killing it
+// mid-batch; expirePaymentLinks also self-limits to a time budget (audit F21).
+export const maxDuration = 60
+
+function safeEqual(a: string, b: string): boolean {
+  const bufA = Buffer.from(a)
+  const bufB = Buffer.from(b)
+  if (bufA.length !== bufB.length) {
+    return false
+  }
+  return timingSafeEqual(bufA, bufB)
+}
 
 function verifyCronAuth(request: Request): boolean {
   const secret = process.env.CRON_SECRET?.trim()
@@ -6,8 +21,9 @@ function verifyCronAuth(request: Request): boolean {
     return false
   }
 
-  const auth = request.headers.get('authorization')?.trim()
-  return auth === `Bearer ${secret}`
+  const auth = request.headers.get('authorization')?.trim() ?? ''
+  // Constant-time comparison (audit F10).
+  return safeEqual(auth, `Bearer ${secret}`)
 }
 
 async function handle(request: Request) {

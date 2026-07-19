@@ -38,26 +38,27 @@ export const Customers: CollectionConfig = {
     {
       name: 'address',
       type: 'group',
+      // Optional: a customer created from a pickup order has no delivery address
+      // (audit F29 — checkout upserts and links a customer by email).
+      admin: {
+        description: 'Present for delivery orders; empty for pickup customers.',
+      },
       fields: [
         {
           name: 'street',
           type: 'text',
-          required: true,
         },
         {
           name: 'city',
           type: 'text',
-          required: true,
         },
         {
           name: 'postalCode',
           type: 'text',
-          required: true,
         },
         {
           name: 'country',
           type: 'text',
-          required: true,
           defaultValue: 'DK',
         },
       ],

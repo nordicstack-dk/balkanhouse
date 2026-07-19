@@ -3,7 +3,7 @@ import { after } from 'next/server'
 import { ORDER_STATUS, SHIPPING_METHOD, STOCK_STATUS, type ShippingMethod } from '@/lib/contracts'
 import type { CartItem } from '@/lib/cart'
 import { sendOrderReceived } from '@/lib/email/send-order-email'
-import { createLogger } from '@/lib/log'
+import { createLogger, maskEmail } from '@/lib/log'
 import { applyPromo } from '@/lib/pricing'
 import { getPayloadClient } from '@/lib/payload'
 import { generateOrderNumber } from '@/lib/orders/order-number'
@@ -11,7 +11,8 @@ import { computeLineTotalDkk, computeOrderTotals } from '@/lib/orders/order-tota
 import { getActivePromotions } from '@/lib/storefront'
 import { getPromoPercentForProduct } from '@/lib/promotions'
 import { routing } from '@/i18n/routing'
-import type { Order } from '@/payload-types'
+import type { Payload } from 'payload'
+import type { Customer, Order } from '@/payload-types'
 
 const log = createLogger('checkout')
 
@@ -93,6 +94,49 @@ async function buildVerifiedLineItems(items: CartItem[]) {
   return lineItems
 }
 
+/**
+ * Find-or-create a customer by email and return its id, so orders roll up to a
+ * customer record (audit F29). Address is optional (pickup customers have none).
+ * The caller treats this as best-effort — a failure must never lose the order.
+ */
+async function upsertCustomer(
+  payload: Payload,
+  data: {
+    firstName: string
+    lastName: string
+    email: string
+    phone: string
+    address?: (CustomerAddressInput & { country: string }) | undefined
+  },
+): Promise<number> {
+  // payload-types is regenerated out-of-band (payload generate:types). Customers
+  // address is optional at runtime (see Customers.ts) but the current generated
+  // type still marks it required, so bridge with a cast until types are regenerated.
+  const fields = {
+    firstName: data.firstName,
+    lastName: data.lastName,
+    phone: data.phone,
+    email: data.email,
+    ...(data.address ? { address: data.address } : {}),
+  } as unknown as Customer
+
+  const existing = await payload.find({
+    collection: 'customers',
+    where: { email: { equals: data.email } },
+    limit: 1,
+    depth: 0,
+  })
+
+  const current = existing.docs[0]
+  if (current) {
+    await payload.update({ collection: 'customers', id: current.id, data: fields })
+    return current.id
+  }
+
+  const created = await payload.create({ collection: 'customers', data: fields })
+  return created.id
+}
+
 export async function createOrder(input: CreateOrderInput): Promise<CreateOrderResult> {
   const { customer, items } = input
   const locale = ROUTING_LOCALES.includes(input.locale as string)
@@ -121,7 +165,7 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
   }
 
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    log.warn('order rejected', { reason: 'invalid_email', email })
+    log.warn('order rejected', { reason: 'invalid_email', email: maskEmail(email) })
     return { ok: false, error: 'invalid_email' }
   }
 
@@ -152,7 +196,7 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
   try {
     const lineItems = await buildVerifiedLineItems(items)
     if (!lineItems) {
-      log.warn('order rejected', { reason: 'unavailable_products', email })
+      log.warn('order rejected', { reason: 'unavailable_products', email: maskEmail(email) })
       return { ok: false, error: 'unavailable_products' }
     }
 
@@ -160,34 +204,76 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
     const { subtotalDkk, totalDkk } = computeOrderTotals({ lineItems, shippingCostDkk })
 
     const payload = await getPayloadClient()
-    const order = await payload.create({
-      collection: 'orders',
-      data: {
-        orderNumber: generateOrderNumber(),
-        status: ORDER_STATUS.AWAITING_CONFIRMATION,
-        customerFirstName: firstName,
-        customerLastName: lastName,
-        customerPhone: phone,
-        customerEmail: email,
-        pickupNotes:
-          shippingMethod === SHIPPING_METHOD.PICKUP
-            ? customer.pickupNotes?.trim() || undefined
-            : undefined,
-        customerAddress,
-        shippingMethod,
-        lineItems,
-        subtotalDkk,
-        shippingCostDkk,
-        discountDkk: 0,
-        totalDkk,
-        locale,
-      },
-    })
+
+    // Best-effort customer link (audit F29): never fails checkout — the order
+    // keeps its own snapshot fields regardless of whether the customer write works.
+    let customerId: number | undefined
+    try {
+      customerId = await upsertCustomer(payload, {
+        firstName,
+        lastName,
+        email,
+        phone,
+        address: customerAddress,
+      })
+    } catch (err) {
+      log.warn('customer upsert failed; order continues unlinked', {
+        email: maskEmail(email),
+        err,
+      })
+    }
+
+    const baseData = {
+      status: ORDER_STATUS.AWAITING_CONFIRMATION,
+      customerFirstName: firstName,
+      customerLastName: lastName,
+      customerPhone: phone,
+      customerEmail: email,
+      ...(customerId ? { customer: customerId } : {}),
+      pickupNotes:
+        shippingMethod === SHIPPING_METHOD.PICKUP
+          ? customer.pickupNotes?.trim() || undefined
+          : undefined,
+      customerAddress,
+      shippingMethod,
+      lineItems,
+      subtotalDkk,
+      shippingCostDkk,
+      discountDkk: 0,
+      totalDkk,
+      locale,
+    }
+
+    // Bounded retry (audit F30): a same-millisecond order-number collision on the
+    // unique index surfaces as a create error; regenerating the number and
+    // retrying turns a rare transient failure into a success. A non-collision
+    // error simply fails again and falls through to the server_error handler.
+    let created: Order | null = null
+    let lastCreateErr: unknown
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      try {
+        created = (await payload.create({
+          collection: 'orders',
+          data: { orderNumber: generateOrderNumber(), ...baseData },
+        })) as Order
+        break
+      } catch (err) {
+        lastCreateErr = err
+        log.warn('order create attempt failed; retrying with a new number', {
+          attempt,
+          email: maskEmail(email),
+        })
+      }
+    }
+    if (!created) {
+      throw lastCreateErr ?? new Error('order create failed')
+    }
+    const order = created
 
     log.info('order created', {
       orderNumber: order.orderNumber,
       orderId: order.id,
-      email,
+      email: maskEmail(email),
       shippingMethod,
       itemCount: lineItems.length,
       totalDkk,
@@ -203,10 +289,10 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
       log.info('dispatching order-received email', {
         orderNumber: order.orderNumber,
         orderId: order.id,
-        email,
+        email: maskEmail(email),
       })
-      return sendOrderReceived(order as Order).catch((err) => {
-        log.error('order-received email failed', { orderId: order.id, email, err })
+      return sendOrderReceived(order).catch((err) => {
+        log.error('order-received email failed', { orderId: order.id, email: maskEmail(email), err })
       })
     }
     try {
@@ -218,7 +304,7 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
 
     return { ok: true, orderNumber: order.orderNumber, orderId: order.id }
   } catch (err) {
-    log.error('order creation failed', { email, err })
+    log.error('order creation failed', { email: maskEmail(email), err })
     return { ok: false, error: 'server_error' }
   }
 }

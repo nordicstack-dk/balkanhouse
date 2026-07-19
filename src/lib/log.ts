@@ -15,6 +15,18 @@
  */
 export type LogData = Record<string, unknown>
 
+/**
+ * Mask an email for logs so raw PII does not accumulate in Vercel function logs
+ * (audit F11). `jane@example.com` -> `j***@example.com`; enough to correlate a
+ * flow without storing the address in plaintext.
+ */
+export function maskEmail(email: string | null | undefined): string {
+  if (!email) return ''
+  const at = email.indexOf('@')
+  if (at <= 0) return '***'
+  return `${email[0]}***${email.slice(at)}`
+}
+
 export type Logger = {
   info: (message: string, data?: LogData) => void
   warn: (message: string, data?: LogData) => void

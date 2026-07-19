@@ -1,3 +1,5 @@
+import { applyPromo } from '@/lib/pricing'
+
 export type CartItem = {
   productId: number
   sku: string
@@ -13,12 +15,10 @@ export type CartItem = {
 export const CART_STORAGE_KEY = 'balkanhouse-cart'
 
 export function cartSubtotal(items: CartItem[]): number {
+  // Single source of truth for promo pricing so the cart total can never drift
+  // from the checkout summary and the created order (audit F27).
   return items.reduce((sum, item) => {
-    const unitPrice =
-      item.promoPercent != null
-        ? Math.round(item.priceDkk * (1 - item.promoPercent / 100) * 100) / 100
-        : item.priceDkk
-    return sum + unitPrice * item.quantity
+    return sum + applyPromo(item.priceDkk, item.promoPercent) * item.quantity
   }, 0)
 }
 
