@@ -2,6 +2,11 @@ import { getPaymentGateway } from '@/lib/payment'
 import { applyPaymentWebhook } from '@/lib/orders/apply-payment-webhook'
 import { getPayloadClient } from '@/lib/payload'
 
+// Give the handler room to ride out a Neon cold start (which can take 20s+) and
+// mark the order paid, rather than being killed mid-write and forcing Frisbii
+// to retry the whole event.
+export const maxDuration = 60
+
 export async function POST(request: Request) {
   const rawBody = await request.text()
 

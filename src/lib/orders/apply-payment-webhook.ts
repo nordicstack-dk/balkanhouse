@@ -1,7 +1,11 @@
 import { ORDER_STATUS, type OrderStatus } from '@/lib/contracts'
+import { sendOrderCancelled, sendPaymentConfirmed } from '@/lib/email/send-order-email'
+import { createLogger } from '@/lib/log'
 import type { PaymentWebhookResult } from '@/lib/payment/types'
 import type { Payload } from 'payload'
 import type { Order } from '@/payload-types'
+
+const log = createLogger('payment-webhook')
 
 function parseOrderId(value: string): number | null {
   const parsed = Number.parseInt(value, 10)
@@ -112,6 +116,12 @@ export async function applyPaymentWebhook(
       id: { equals: order.id },
       status: { equals: expectedStatus },
     },
+    // Defer the status email to AFTER commit (below). The afterChange hook would
+    // otherwise send it via an awaited Resend HTTP call inside this transaction —
+    // holding the DB transaction open across a multi-second external call, which
+    // is fragile on the Neon pooler (PgBouncer transaction mode) and can fail the
+    // commit, so the paid write never lands and the webhook keeps retrying.
+    context: { skipStatusEmail: true },
     data: {
       status: nextStatus,
       ...(nextStatus === ORDER_STATUS.PAID
@@ -128,6 +138,24 @@ export async function applyPaymentWebhook(
   const updated = (updateResult.docs?.[0] ?? null) as Order | null
   if (!updated) {
     return { applied: false, orderId: order.id, reason: 'already_applied' }
+  }
+
+  // Post-commit, best-effort: a Resend hiccup must not fail the (already
+  // committed) status change or make the webhook retry a write that succeeded.
+  const notify =
+    nextStatus === ORDER_STATUS.PAID
+      ? sendPaymentConfirmed
+      : nextStatus === ORDER_STATUS.CANCELLED
+        ? sendOrderCancelled
+        : null
+  if (notify) {
+    await notify(updated).catch((err) => {
+      log.error('status email failed (order already updated)', {
+        orderId: order.id,
+        to: nextStatus,
+        err,
+      })
+    })
   }
 
   return { applied: true, orderId: order.id }
