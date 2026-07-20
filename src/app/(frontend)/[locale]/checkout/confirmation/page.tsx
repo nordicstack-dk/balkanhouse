@@ -11,6 +11,10 @@ type Props = {
   searchParams: Promise<{ order?: string }>
 }
 
+// Cap the function so a slow DB/gateway can never hang the return page to the
+// platform ceiling (prod logs 2026-07-20 showed a 300s runtime timeout here).
+export const maxDuration = 20
+
 export default async function CheckoutConfirmationPage({ params, searchParams }: Props) {
   const { locale } = await params
   const { order: orderNumber } = await searchParams
@@ -25,10 +29,23 @@ export default async function CheckoutConfirmationPage({ params, searchParams }:
     // the reliable confirmation path — the async webhook may be delayed or not
     // yet configured, so the customer's return is when we confirm payment.
     // applyPaymentWebhook underneath is idempotent, so racing the webhook is safe.
-    const payload = await getPayloadClient()
-    const verification = await verifyPaymentOnReturn(payload, orderNumber)
-    paymentVerified =
-      verification.applied || verification.order?.status === ORDER_STATUS.PAID
+    //
+    // Crucially, this must NEVER surface an error to a customer who just paid:
+    // a slow or unavailable DB/gateway degrades to the order-received view
+    // (the webhook, or a refresh, reconciles the paid status), instead of a
+    // 500/504. A 12s race guarantees the page returns promptly regardless.
+    try {
+      const payload = await getPayloadClient()
+      const verification = await Promise.race([
+        verifyPaymentOnReturn(payload, orderNumber),
+        new Promise<null>((resolve) => setTimeout(() => resolve(null), 12_000)),
+      ])
+      paymentVerified =
+        !!verification &&
+        (verification.applied || verification.order?.status === ORDER_STATUS.PAID)
+    } catch (err) {
+      console.error('[confirmation] payment verification failed; showing received state', err)
+    }
   }
 
   const isPaymentConfirmation = paymentVerified
