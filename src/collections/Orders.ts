@@ -462,6 +462,21 @@ export const Orders: CollectionConfig = {
     },
   ],
   hooks: {
+    beforeDelete: [
+      async ({ req, id }) => {
+        // Remove the order's email-activity rows first. order_emails.order is a
+        // required (NOT NULL) relationship whose FK is ON DELETE SET NULL, so
+        // deleting an order would otherwise make Postgres try to null order_id
+        // and violate the NOT NULL constraint — aborting the whole delete
+        // transaction (prod: "current transaction is aborted"). Passing req keeps
+        // this in the same transaction as the order delete.
+        await req.payload.delete({
+          collection: 'order-emails',
+          where: { order: { equals: id } },
+          req,
+        })
+      },
+    ],
     beforeChange: [
       ({ data, operation, originalDoc }) => {
         if (operation === 'create' && data && !data.orderNumber) {
