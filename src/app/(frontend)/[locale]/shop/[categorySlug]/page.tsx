@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 
 import { ProductGrid } from '@/components/products/ProductGrid'
 import { Pagination } from '@/components/shop/Pagination'
-import type { Locale } from '@/i18n/routing'
+import { assertLocale } from '@/i18n/locale-guard'
 import {
   getActivePromotions,
   getCategoryBySlug,
@@ -20,13 +20,14 @@ type Props = {
 // category nav live in the persistent shop layout.
 
 export default async function CategoryShopPage({ params, searchParams }: Props) {
-  const { locale, categorySlug } = await params
+  const { locale: rawLocale, categorySlug } = await params
   const { q, page: pageParam } = await searchParams
-  setRequestLocale(locale as Locale)
+  const locale = assertLocale(rawLocale)
+  setRequestLocale(locale)
 
   const requestedPage = Math.max(1, parseInt(pageParam ?? '1', 10) || 1)
 
-  const category = await getCategoryBySlug(categorySlug, locale as Locale)
+  const category = await getCategoryBySlug(categorySlug, locale)
   if (!category) notFound()
 
   // Paginated (audit F20): bounds per-page work regardless of how many products
@@ -35,7 +36,7 @@ export default async function CategoryShopPage({ params, searchParams }: Props) 
   const [t, productsPage, promotions] = await Promise.all([
     getTranslations('shop'),
     getProductsPage({
-      locale: locale as Locale,
+      locale,
       categoryId: category.id,
       search: q,
       page: requestedPage,

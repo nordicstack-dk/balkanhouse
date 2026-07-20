@@ -4,7 +4,7 @@ import { FeaturedCategories } from '@/components/home/FeaturedCategories'
 import { Hero } from '@/components/home/Hero'
 import { PromotionsCarousel } from '@/components/home/PromotionsCarousel'
 import { ProductCard } from '@/components/products/ProductCard'
-import type { Locale } from '@/i18n/routing'
+import { assertLocale } from '@/i18n/locale-guard'
 import {
   getActivePromotions,
   getCategories,
@@ -20,11 +20,12 @@ type Props = {
 export const revalidate = 60
 
 export default async function HomePage({ params }: Props) {
-  const { locale } = await params
-  setRequestLocale(locale as Locale)
+  const { locale: rawLocale } = await params
+  const locale = assertLocale(rawLocale)
+  setRequestLocale(locale)
 
   const [categories, promotions] = await Promise.all([
-    getCategories(locale as Locale),
+    getCategories(locale),
     getActivePromotions(),
   ])
   const promotedProducts = getPromotedProducts(promotions)

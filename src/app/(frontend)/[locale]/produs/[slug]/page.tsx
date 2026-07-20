@@ -7,7 +7,7 @@ import { AllergenList } from '@/components/products/AllergenList'
 import { PromoBadge } from '@/components/products/PromoBadge'
 import { StockBadge } from '@/components/products/StockBadge'
 import { RichText } from '@/components/ui/RichText'
-import type { Locale } from '@/i18n/routing'
+import { assertLocale } from '@/i18n/locale-guard'
 import type { AllergenEU } from '@/lib/contracts'
 import { applyPromo, decodeProductSlug, formatPriceDkk } from '@/lib/pricing'
 import {
@@ -29,12 +29,13 @@ export function generateStaticParams() {
 export const revalidate = 60
 
 export default async function ProductPage({ params }: Props) {
-  const { locale, slug } = await params
-  setRequestLocale(locale as Locale)
+  const { locale: rawLocale, slug } = await params
+  const locale = assertLocale(rawLocale)
+  setRequestLocale(locale)
 
   const sku = decodeProductSlug(slug)
   const [product, promotions, t, tUnit] = await Promise.all([
-    getProductBySku(sku, locale as Locale),
+    getProductBySku(sku, locale),
     getActivePromotions(),
     getTranslations('product'),
     getTranslations('unit'),

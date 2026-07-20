@@ -2,7 +2,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server'
 
 import { ProductGrid } from '@/components/products/ProductGrid'
 import { Pagination } from '@/components/shop/Pagination'
-import type { Locale } from '@/i18n/routing'
+import { assertLocale } from '@/i18n/locale-guard'
 import {
   getActivePromotions,
   getProductsPage,
@@ -18,15 +18,16 @@ type Props = {
 // category nav live in the persistent shop layout.
 
 export default async function ShopPage({ params, searchParams }: Props) {
-  const { locale } = await params
+  const { locale: rawLocale } = await params
   const { q, page: pageParam } = await searchParams
-  setRequestLocale(locale as Locale)
+  const locale = assertLocale(rawLocale)
+  setRequestLocale(locale)
 
   const requestedPage = Math.max(1, parseInt(pageParam ?? '1', 10) || 1)
 
   const [t, productsPage, promotions] = await Promise.all([
     getTranslations('shop'),
-    getProductsPage({ locale: locale as Locale, search: q, page: requestedPage }),
+    getProductsPage({ locale, search: q, page: requestedPage }),
     getActivePromotions(),
   ])
   const { docs: products, page, totalPages } = productsPage

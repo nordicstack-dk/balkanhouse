@@ -5,7 +5,7 @@ import { CategoryNav } from '@/components/shop/CategoryNav'
 import { SearchBar } from '@/components/shop/SearchBar'
 import { ShopHeading } from '@/components/shop/ShopHeading'
 import { Skeleton } from '@/components/ui/Skeleton'
-import type { Locale } from '@/i18n/routing'
+import { assertLocale } from '@/i18n/locale-guard'
 import { getCategories } from '@/lib/storefront'
 
 type Props = {
@@ -17,10 +17,11 @@ type Props = {
 // category sidebar stay mounted while only the product area (the page)
 // streams through its loading boundary.
 export default async function ShopLayout({ children, params }: Props) {
-  const { locale } = await params
-  setRequestLocale(locale as Locale)
+  const { locale: rawLocale } = await params
+  const locale = assertLocale(rawLocale)
+  setRequestLocale(locale)
 
-  const categories = await getCategories(locale as Locale)
+  const categories = await getCategories(locale)
 
   return (
     <div>
