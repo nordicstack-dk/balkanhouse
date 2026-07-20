@@ -388,6 +388,12 @@ export const Orders: CollectionConfig = {
                 },
               },
             },
+          ],
+        },
+        {
+          label: 'Email activity',
+          description: 'Delivery status of order emails, tracked from Resend webhooks.',
+          fields: [
             {
               name: 'emailActivity',
               type: 'ui',
