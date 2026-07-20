@@ -11,7 +11,12 @@ export const Users: CollectionConfig = {
     group: 'System',
     description: 'Accounts that can sign in to this admin panel.',
   },
-  auth: true,
+  auth: {
+    // Default is 2h; extend so an idle admin tab doesn't expire mid-work and
+    // start returning 401/403 on every background request. The admin UI also
+    // refreshes the token while active, so this mainly covers idle gaps.
+    tokenExpiration: 60 * 60 * 8, // 8 hours
+  },
   fields: [
     // Email added by default
     // Add more fields as needed
