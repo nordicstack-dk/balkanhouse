@@ -32,6 +32,7 @@ export function CheckoutForm() {
   const [pickupNotes, setPickupNotes] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [redirecting, setRedirecting] = useState(false)
 
   if (!hydrated) {
     return (
@@ -50,6 +51,20 @@ export function CheckoutForm() {
           <Skeleton className="h-4 w-full" />
           <Skeleton className="h-6 w-full" />
         </div>
+      </div>
+    )
+  }
+
+  // After a successful order we clear the cart and navigate to the confirmation
+  // page. Show a spinner during that transition so the empty-cart view below
+  // never flashes between clearCart() and the route change.
+  if (redirecting) {
+    return (
+      <div
+        className="flex items-center justify-center rounded-xl border border-cream-dark bg-white p-12"
+        aria-busy="true"
+      >
+        <Spinner className="h-8 w-8" />
       </div>
     )
   }
@@ -106,6 +121,9 @@ export function CheckoutForm() {
       return
     }
 
+    // Flip to the redirecting view first so clearing the cart can't flash the
+    // empty-cart message during navigation.
+    setRedirecting(true)
     clearCart()
     router.push(`/checkout/confirmation?order=${encodeURIComponent(result.orderNumber)}`)
   }
