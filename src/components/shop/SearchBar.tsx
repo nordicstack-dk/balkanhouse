@@ -1,14 +1,33 @@
 'use client'
 
 import { useSearchParams } from 'next/navigation'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
+
+import { useRouter } from '@/i18n/navigation'
 
 export function SearchBar() {
   const t = useTranslations('shop')
+  const locale = useLocale()
+  const router = useRouter()
   const q = useSearchParams().get('q') ?? ''
 
+  // Search always spans the whole catalog, so it lands on /shop even when the
+  // customer is browsing a single category.
+  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const value = new FormData(event.currentTarget).get('q')
+    const query = typeof value === 'string' ? value.trim() : ''
+    router.push(query ? { pathname: '/shop', query: { q: query } } : { pathname: '/shop' })
+  }
+
   return (
-    <form action="" method="get" className="flex gap-2">
+    // `action` is the no-JS fallback; onSubmit handles client-side navigation.
+    <form
+      action={`/${locale}/shop`}
+      method="get"
+      onSubmit={handleSubmit}
+      className="flex gap-2"
+    >
       <input
         key={q}
         type="search"
