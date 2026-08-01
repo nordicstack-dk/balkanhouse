@@ -1,8 +1,16 @@
-# Product import template (draft)
+# Product import template
 
 This document describes the expected Excel columns for bulk product import via `pnpm import:products`.
 
-> **Draft** — column names and mappings may change once the client provides their product spreadsheet.
+> **Ready-to-use file:** [`product-import-template.xlsx`](./product-import-template.xlsx) — a formatted
+> workbook with one column per language, dropdowns for unit/stock/category, an example row to delete,
+> and built-in Instructions + Reference sheets.
+
+> **Tip:** prefer `.xlsx` over `.csv`. The CSV reader splits on commas, so any value containing a
+> comma (the `allergens` list, or an ingredient list) will be mis-parsed.
+
+> **Do not add plain `title` / `ingredients` / `description` columns alongside the `_ro` ones.**
+> The importer applies the bare column last, so it silently overrides the `_ro` value.
 
 ## File format
 

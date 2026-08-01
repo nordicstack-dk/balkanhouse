@@ -207,7 +207,10 @@ async function readRows(filePath: string): Promise<Record<string, string>[]> {
     })
   }
 
-  const { readFile, utils } = await import('xlsx')
+  // xlsx@0.18 is CommonJS: under ESM only some helpers are re-exported as named
+  // bindings (readFile is not), so go through the default export.
+  const xlsxModule = await import('xlsx')
+  const { readFile, utils } = xlsxModule.default ?? xlsxModule
   const workbook = readFile(filePath)
   const sheetName = workbook.SheetNames[0]
 
