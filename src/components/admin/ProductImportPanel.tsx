@@ -23,7 +23,7 @@ const BURGUNDY = '#6b1d2a'
 // themes; the fallbacks cover the case where they are not defined.
 const card: CSSProperties = {
   border: '1px solid var(--theme-elevation-150, #e3e3e3)',
-  background: 'var(--theme-elevation-0, #fff)',
+  background: '#000',
   borderRadius: '10px',
   padding: '20px 24px',
   marginBottom: '24px',
