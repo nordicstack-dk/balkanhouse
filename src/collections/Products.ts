@@ -21,8 +21,8 @@ export const Products: CollectionConfig = {
   },
   admin: {
     useAsTitle: 'adminLabel',
-    defaultColumns: ['title', 'sku', 'priceDkk', 'stockStatus', 'category'],
-    listSearchableFields: ['sku', 'title', 'adminLabel'],
+    defaultColumns: ['title', 'sku', 'keyword', 'priceDkk', 'stockStatus', 'category'],
+    listSearchableFields: ['sku', 'title', 'adminLabel', 'keyword'],
     group: 'Catalog',
     description: 'Products shown in the shop. Identity, price and stock live in the sidebar; content in the main panel.',
     components: {
@@ -45,6 +45,11 @@ export const Products: CollectionConfig = {
           req.locale,
         )
         data.adminLabel = formatProductAdminLabel(sku, title)
+
+        if (typeof data.keyword === 'string') {
+          const normalized = data.keyword.trim().toLowerCase()
+          data.keyword = normalized || null
+        }
 
         // Empty images → attach Media (or orphan Blob) named after the SKU.
         const incomingImages = data.images !== undefined ? data.images : originalDoc?.images
@@ -199,6 +204,15 @@ export const Products: CollectionConfig = {
       type: 'text',
       admin: {
         description: 'Optional ISO country name or code',
+      },
+    },
+    {
+      name: 'keyword',
+      type: 'text',
+      index: true,
+      admin: {
+        description:
+          'Shared keyword for related products on the product page (e.g. bread). Stored lowercase.',
       },
     },
   ],

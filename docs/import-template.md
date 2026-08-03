@@ -51,6 +51,7 @@ This document describes the expected Excel columns for bulk product import.
 | `description_da` | text | | Danish description |
 | `description_en` | text | | English description |
 | `image` | text | `BH-001` | Image file name without extension; defaults to the row's `sku` |
+| `keyword` | text | `bread` | Shared related-products keyword (stored lowercase). Same keyword groups products on the product page |
 | `country_of_origin` | text | `RO` | Optional origin |
 
 ## Images

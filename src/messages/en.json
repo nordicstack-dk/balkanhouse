@@ -40,7 +40,8 @@
     "description": "Description",
     "unit": "Unit",
     "origin": "Country of origin",
-    "promo": "-{percent}%"
+    "promo": "-{percent}%",
+    "relatedProducts": "Related products"
   },
   "stock": {
     "in": "In stock",

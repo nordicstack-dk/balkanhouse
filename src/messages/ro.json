@@ -40,7 +40,8 @@
     "description": "Descriere",
     "unit": "Unitate",
     "origin": "Țara de origine",
-    "promo": "-{percent}%"
+    "promo": "-{percent}%",
+    "relatedProducts": "Produse asemănătoare"
   },
   "stock": {
     "in": "În stoc",

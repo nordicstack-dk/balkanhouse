@@ -280,6 +280,10 @@ export interface Product {
    * Optional ISO country name or code
    */
   countryOfOrigin?: string | null;
+  /**
+   * Shared keyword for related products on the product page (e.g. bread). Stored lowercase.
+   */
+  keyword?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -644,6 +648,7 @@ export interface ProductsSelect<T extends boolean = true> {
   ingredients?: T;
   description?: T;
   countryOfOrigin?: T;
+  keyword?: T;
   updatedAt?: T;
   createdAt?: T;
 }

@@ -20,6 +20,8 @@ interface ImportRow {
   ingredients: Partial<Record<Locale, string>>
   description: Partial<Record<Locale, string>>
   countryOfOrigin?: string
+  /** Shared related-products keyword (e.g. bread). */
+  keyword?: string
   /** Image file base name (without extension); defaults to the SKU. */
   image?: string
 }
@@ -178,6 +180,8 @@ function parseRow(row: Record<string, string>, lineNumber: number): ImportRow {
   const ingredients = parseLocalizedField(row, 'ingredients')
   const description = parseLocalizedField(row, 'description')
   const countryOfOrigin = getCell(row, 'country_of_origin') || undefined
+  const keywordRaw = getCell(row, 'keyword')
+  const keyword = keywordRaw ? keywordRaw.trim().toLowerCase() : undefined
   const image = getCell(row, 'image', 'image_name', 'image_filename') || undefined
 
   return {
@@ -191,6 +195,7 @@ function parseRow(row: Record<string, string>, lineNumber: number): ImportRow {
     ingredients,
     description,
     countryOfOrigin,
+    keyword,
     image,
   }
 }
@@ -407,6 +412,7 @@ export async function importProductsFromBuffer(
       stockStatus: row.stockStatus,
       allergens: row.allergens,
       countryOfOrigin: row.countryOfOrigin,
+      ...(row.keyword ? { keyword: row.keyword } : {}),
       ...(category ? { category } : {}),
     }
 

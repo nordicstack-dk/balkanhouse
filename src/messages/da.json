@@ -40,7 +40,8 @@
     "description": "Beskrivelse",
     "unit": "Enhed",
     "origin": "Oprindelsesland",
-    "promo": "-{percent}%"
+    "promo": "-{percent}%",
+    "relatedProducts": "Relaterede produkter"
   },
   "stock": {
     "in": "På lager",

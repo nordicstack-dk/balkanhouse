@@ -2,6 +2,7 @@ import { unstable_cache } from 'next/cache'
 import type { Where } from 'payload'
 
 import type { Locale } from '@/i18n/routing'
+import { STOCK_STATUS } from '@/lib/contracts'
 import type { Category, Media, Product, Promotion } from '@/payload-types'
 
 import { getPayloadClient } from './payload'
@@ -224,6 +225,43 @@ export async function getProductBySku(
       return (result.docs[0] as ProductWithRelations) ?? null
     },
     ['storefront', 'product', sku, locale],
+    { revalidate: REVALIDATE_SECONDS, tags: ['products'] },
+  )()
+}
+
+/**
+ * Other products that share the same related-products keyword (excluding the
+ * current product). Empty keyword or no matches → empty list.
+ */
+export async function getRelatedProductsByKeyword(
+  keyword: string | null | undefined,
+  excludeProductId: number,
+  locale: Locale,
+  limit = 8,
+): Promise<ProductWithRelations[]> {
+  const normalized = keyword?.trim().toLowerCase()
+  if (!normalized) return []
+
+  return unstable_cache(
+    async () => {
+      const payload = await getPayloadClient()
+      const result = await payload.find({
+        collection: 'products',
+        locale,
+        where: {
+          and: [
+            { keyword: { equals: normalized } },
+            { id: { not_equals: excludeProductId } },
+            { stockStatus: { not_equals: STOCK_STATUS.OUT } },
+          ],
+        },
+        limit,
+        depth: 1,
+        sort: 'title',
+      })
+      return result.docs as ProductWithRelations[]
+    },
+    ['storefront', 'related', normalized, String(excludeProductId), locale, String(limit)],
     { revalidate: REVALIDATE_SECONDS, tags: ['products'] },
   )()
 }
