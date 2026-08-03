@@ -183,8 +183,8 @@ export function ProductImportPanel() {
           borderRadius: '8px',
           border: `1px dashed ${dragging ? BURGUNDY : 'var(--theme-elevation-200, #d4d4d4)'}`,
           background: dragging
-            ? 'var(--theme-elevation-50, #faf6f2)'
-            : 'var(--theme-elevation-25, #fafafa)',
+            ? 'var(--theme-elevation-50, #000000)'
+            : 'var(--theme-elevation-25, #000000)',
           cursor: loading ? 'not-allowed' : 'pointer',
           transition: 'border-color .15s ease, background .15s ease',
           opacity: loading ? 0.7 : 1,
