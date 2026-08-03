@@ -20,6 +20,7 @@ async function main() {
       phone: '+4512345678',
       shippingMethod: 'pickup',
       pickupNotes: 'Test pickup note',
+      privacyConsent: true,
     },
     items: [
       {
