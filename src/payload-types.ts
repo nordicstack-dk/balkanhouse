@@ -280,18 +280,6 @@ export interface Product {
    * Optional ISO country name or code
    */
   countryOfOrigin?: string | null;
-  /**
-   * Optional extra product attributes (key/value)
-   */
-  attributes?:
-    | {
-        [k: string]: unknown;
-      }
-    | unknown[]
-    | string
-    | number
-    | boolean
-    | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -640,7 +628,6 @@ export interface ProductsSelect<T extends boolean = true> {
   ingredients?: T;
   description?: T;
   countryOfOrigin?: T;
-  attributes?: T;
   updatedAt?: T;
   createdAt?: T;
 }

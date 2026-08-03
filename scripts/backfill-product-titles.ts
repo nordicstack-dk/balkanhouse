@@ -14,34 +14,13 @@ function isNonemptyString(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0
 }
 
-function getAttributeName(attributes: unknown): string | null {
-  if (!attributes || typeof attributes !== 'object' || Array.isArray(attributes)) {
-    return null
-  }
-
-  const record = attributes as Record<string, unknown>
-
-  for (const key of ['name', 'title', 'productName', 'product_name', 'label']) {
-    if (isNonemptyString(record[key])) {
-      return record[key].trim()
-    }
-  }
-
-  return null
-}
-
 function hasMissingTitle(titles: LocalizedTitle): boolean {
   return LOCALES.some((locale) => !isNonemptyString(titles[locale]))
 }
 
-function deriveTitles(
-  sku: string,
-  attributes: unknown,
-  existing: LocalizedTitle,
-): Record<Locale, string> {
+function deriveTitles(sku: string, existing: LocalizedTitle): Record<Locale, string> {
   const fromAnyLocale = LOCALES.map((locale) => existing[locale]).find(isNonemptyString)
-  const fromAttributes = getAttributeName(attributes)
-  const base = fromAnyLocale ?? fromAttributes ?? sku
+  const base = fromAnyLocale ?? sku
 
   return {
     ro: existing.ro ?? base,
@@ -139,7 +118,7 @@ async function backfillProductTitles(dryRun: boolean): Promise<void> {
       continue
     }
 
-    const titles = deriveTitles(doc.sku, doc.attributes, existing)
+    const titles = deriveTitles(doc.sku, existing)
 
     if (dryRun) {
       console.log(`Would update ${doc.sku}: ${JSON.stringify(titles)}`)

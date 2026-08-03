@@ -48,7 +48,6 @@ This document describes the expected Excel columns for bulk product import via `
 | `description_en` | text | | English description |
 | `image` | text | `BH-001` | Image file name without extension; defaults to the row's `sku`. Only used with `--images-dir` |
 | `country_of_origin` | text | `RO` | Optional origin |
-| `attributes` | JSON text | `{"brand":"Balkan House"}` | Optional extra attributes object |
 
 ## Images
 

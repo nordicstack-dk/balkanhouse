@@ -23,7 +23,6 @@ interface ImportRow {
   ingredients: Partial<Record<Locale, string>>
   description: Partial<Record<Locale, string>>
   countryOfOrigin?: string
-  attributes?: Record<string, unknown>
   /** Image base name (without extension); defaults to the SKU. */
   image?: string
 }
@@ -163,16 +162,6 @@ function parseRow(row: Record<string, string>, lineNumber: number): ImportRow {
   // Image file base name. Defaults to the SKU, so naming files BH-001.png is enough.
   const image = getCell(row, 'image', 'image_name', 'image_filename') || undefined
 
-  let attributes: Record<string, unknown> | undefined
-  const attributesRaw = getCell(row, 'attributes')
-  if (attributesRaw) {
-    try {
-      attributes = JSON.parse(attributesRaw) as Record<string, unknown>
-    } catch {
-      throw new Error(`Row ${lineNumber}: invalid attributes JSON`)
-    }
-  }
-
   return {
     sku,
     title,
@@ -184,7 +173,6 @@ function parseRow(row: Record<string, string>, lineNumber: number): ImportRow {
     ingredients,
     description,
     countryOfOrigin,
-    attributes,
     image,
   }
 }
@@ -406,7 +394,6 @@ async function importProducts(filePath: string, options: ImportOptions): Promise
       stockStatus: row.stockStatus,
       allergens: row.allergens,
       countryOfOrigin: row.countryOfOrigin,
-      attributes: row.attributes,
       ...(category ? { category } : {}),
     }
 

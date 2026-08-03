@@ -173,12 +173,5 @@ export const Products: CollectionConfig = {
         description: 'Optional ISO country name or code',
       },
     },
-    {
-      name: 'attributes',
-      type: 'json',
-      admin: {
-        description: 'Optional extra product attributes (key/value)',
-      },
-    },
   ],
 }
