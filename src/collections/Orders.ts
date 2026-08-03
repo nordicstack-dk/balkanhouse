@@ -20,6 +20,7 @@ import {
   orderFinancialFieldAccess,
 } from '@/lib/orders/order-financial-lock'
 import { syncOrderTotalsData } from '@/lib/orders/order-totals'
+import { runAfterResponse } from '@/lib/after-response'
 import { sendPaymentLinkHandler } from '@/collections/endpoints/send-payment-link'
 import { cancelPaymentLinkHandler } from '@/collections/endpoints/cancel-payment-link'
 import { createLogger } from '@/lib/log'
@@ -559,30 +560,33 @@ export const Orders: CollectionConfig = {
           return
         }
 
-        // Await the send: this hook runs inside the admin's serverless request,
-        // which Vercel freezes once the request returns — a fire-and-forget
-        // promise would be killed before the Resend call leaves the instance
-        // (same failure mode as the checkout email). Errors are swallowed so a
-        // Resend hiccup never fails the status update.
-        const send = async (fn: (order: Order) => Promise<unknown>) => {
-          try {
-            await fn(order)
-          } catch (err) {
-            log.error('status notification email failed', {
-              orderId: order.id,
-              to: nextStatus,
-              err,
-            })
-          }
+        const sender =
+          nextStatus === ORDER_STATUS.PAID
+            ? sendPaymentConfirmed
+            : nextStatus === ORDER_STATUS.SHIPPED
+              ? sendOrderShipped
+              : nextStatus === ORDER_STATUS.CANCELLED
+                ? sendOrderCancelled
+                : null
+
+        if (!sender) {
+          return
         }
 
-        if (nextStatus === ORDER_STATUS.PAID) {
-          await send(sendPaymentConfirmed)
-        } else if (nextStatus === ORDER_STATUS.SHIPPED) {
-          await send(sendOrderShipped)
-        } else if (nextStatus === ORDER_STATUS.CANCELLED) {
-          await send(sendOrderCancelled)
-        }
+        // Send AFTER the response, not inline here. Payload commits this
+        // update's transaction only once every hook returns, so awaiting the
+        // Resend send (plus its order-emails write, which takes a second pool
+        // connection) inside this hook holds the transaction and a DB
+        // connection open across the whole network round-trip. Under the small
+        // serverless pool that starved connections and left the update to time
+        // out and roll back — the admin Save spun forever and the status change
+        // was lost. Deferring lets the status commit immediately; Vercel keeps
+        // the instance alive for the deferred send via `after()`/waitUntil.
+        await runAfterResponse(() => sender(order), {
+          event: 'status_email',
+          orderId: order.id,
+          to: nextStatus,
+        })
       },
     ],
   },
