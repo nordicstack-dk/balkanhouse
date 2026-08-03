@@ -196,10 +196,6 @@ export interface Category {
    * URL segment, e.g. 'conserve' becomes /shop/conserve (translate per language).
    */
   slug: string;
-  /**
-   * Optional parent category, for nesting.
-   */
-  parent?: (number | null) | Category;
   updatedAt: string;
   createdAt: string;
 }
@@ -624,7 +620,6 @@ export interface MediaSelect<T extends boolean = true> {
 export interface CategoriesSelect<T extends boolean = true> {
   name?: T;
   slug?: T;
-  parent?: T;
   updatedAt?: T;
   createdAt?: T;
 }

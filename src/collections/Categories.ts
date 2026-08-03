@@ -15,7 +15,7 @@ export const Categories: CollectionConfig = {
   },
   admin: {
     useAsTitle: 'name',
-    defaultColumns: ['name', 'slug', 'parent'],
+    defaultColumns: ['name', 'slug'],
     listSearchableFields: ['name', 'slug'],
     group: 'Catalog',
     description: 'Shop categories used for browsing and filtering products.',
@@ -38,15 +38,6 @@ export const Categories: CollectionConfig = {
       index: true,
       admin: {
         description: "URL segment, e.g. 'conserve' becomes /shop/conserve (translate per language).",
-      },
-    },
-    {
-      name: 'parent',
-      type: 'relationship',
-      relationTo: 'categories',
-      admin: {
-        position: 'sidebar',
-        description: 'Optional parent category, for nesting.',
       },
     },
   ],
