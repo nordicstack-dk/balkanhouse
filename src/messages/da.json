@@ -87,6 +87,9 @@
     "pickupNotesPlaceholder": "F.eks. foretrækker afhentning om eftermiddagen",
     "pickupInfo": "Afhentning sker i butikken. Du modtager et betalingslink, når vi har bekræftet ordren.",
     "deliveryInfo": "Vi leverer til den angivne adresse. Du modtager et betalingslink, når vi har bekræftet ordren.",
+    "consentsLegend": "Samtykke",
+    "privacyConsent": "Jeg accepterer, at Balkan House må behandle og opbevare mine personoplysninger for at opfylde denne ordre.",
+    "newsletterOptIn": "Jeg vil gerne modtage nyheder og tilbud på e-mail (valgfrit).",
     "orderSummary": "Ordreoversigt",
     "subtotal": "Subtotal",
     "paymentLater": "Betaling sker, når butikken har bekræftet ordren.",
@@ -103,6 +106,7 @@
       "missing_fields": "Udfyld alle obligatoriske felter.",
       "missing_address": "Udfyld leveringsadressen.",
       "invalid_email": "E-mailadressen er ikke gyldig.",
+      "privacy_consent_required": "Accepter venligst samtykke til behandling af personoplysninger for at afgive ordren.",
       "unavailable_products": "Nogle varer i din kurv er ikke længere tilgængelige. Opdater kurven og prøv igen.",
       "server_error": "Der opstod en fejl. Prøv igen."
     }

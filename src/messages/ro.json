@@ -87,6 +87,9 @@
     "pickupNotesPlaceholder": "Ex: prefer o ridicare după-amiază",
     "pickupInfo": "Ridicarea se face de la magazin. Vei primi un link de plată după confirmarea comenzii.",
     "deliveryInfo": "Livrăm comanda la adresa indicată. Vei primi un link de plată după confirmarea comenzii.",
+    "consentsLegend": "Consimțăminte",
+    "privacyConsent": "Sunt de acord ca Balkan House să prelucreze și să stocheze datele mele personale pentru a îndeplini această comandă.",
+    "newsletterOptIn": "Doresc să primesc noutăți și oferte pe email (opțional).",
     "orderSummary": "Rezumat comandă",
     "subtotal": "Subtotal",
     "paymentLater": "Plata se face după confirmarea comenzii de către magazin.",
@@ -103,6 +106,7 @@
       "missing_fields": "Completează toate câmpurile obligatorii.",
       "missing_address": "Completează adresa de livrare.",
       "invalid_email": "Adresa de email nu este validă.",
+      "privacy_consent_required": "Acceptă consimțământul privind datele personale pentru a plasa comanda.",
       "unavailable_products": "Unele produse din coș nu mai sunt disponibile. Actualizează coșul și încearcă din nou.",
       "server_error": "A apărut o eroare. Încearcă din nou."
     }

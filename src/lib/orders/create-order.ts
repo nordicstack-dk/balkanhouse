@@ -35,6 +35,10 @@ export type CheckoutCustomerInput = {
   shippingMethod: ShippingMethod
   address?: CustomerAddressInput
   pickupNotes?: string
+  /** Required GDPR/privacy acceptance for storing personal data. */
+  privacyConsent: boolean
+  /** Optional newsletter subscription. */
+  newsletterOptIn?: boolean
 }
 
 export type CreateOrderInput = {
@@ -107,16 +111,19 @@ async function upsertCustomer(
     email: string
     phone: string
     address?: (CustomerAddressInput & { country: string }) | undefined
+    newsletterOptIn: boolean
+    privacyConsentAt: string
   },
 ): Promise<number> {
-  // payload-types is regenerated out-of-band (payload generate:types). Customers
-  // address is optional at runtime (see Customers.ts) but the current generated
-  // type still marks it required, so bridge with a cast until types are regenerated.
+  // payload-types is regenerated out-of-band (payload generate:types). Bridge
+  // with a cast until types include the consent/newsletter fields.
   const fields = {
     firstName: data.firstName,
     lastName: data.lastName,
     phone: data.phone,
     email: data.email,
+    newsletterOptIn: data.newsletterOptIn,
+    privacyConsentAt: data.privacyConsentAt,
     ...(data.address ? { address: data.address } : {}),
   } as unknown as Customer
 
@@ -162,6 +169,11 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
   if (!firstName || !lastName || !email || !phone) {
     log.warn('order rejected', { reason: 'missing_fields' })
     return { ok: false, error: 'missing_fields' }
+  }
+
+  if (!customer.privacyConsent) {
+    log.warn('order rejected', { reason: 'privacy_consent_required' })
+    return { ok: false, error: 'privacy_consent_required' }
   }
 
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -215,6 +227,8 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
         email,
         phone,
         address: customerAddress,
+        newsletterOptIn: Boolean(customer.newsletterOptIn),
+        privacyConsentAt: new Date().toISOString(),
       })
     } catch (err) {
       log.warn('customer upsert failed; order continues unlinked', {

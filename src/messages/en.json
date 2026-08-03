@@ -87,6 +87,9 @@
     "pickupNotesPlaceholder": "E.g. prefer afternoon pickup",
     "pickupInfo": "Pickup is at the store. You will receive a payment link after we confirm your order.",
     "deliveryInfo": "We deliver to the address you provide. You will receive a payment link after we confirm your order.",
+    "consentsLegend": "Consent",
+    "privacyConsent": "I agree that Balkan House may process and store my personal data to fulfill this order.",
+    "newsletterOptIn": "I would like to receive news and offers by email (optional).",
     "orderSummary": "Order summary",
     "subtotal": "Subtotal",
     "paymentLater": "Payment is collected after the store confirms your order.",
@@ -103,6 +106,7 @@
       "missing_fields": "Please fill in all required fields.",
       "missing_address": "Please fill in the delivery address.",
       "invalid_email": "The email address is not valid.",
+      "privacy_consent_required": "Please accept the privacy consent to place your order.",
       "unavailable_products": "Some products in your cart are no longer available. Please update your cart and try again.",
       "server_error": "Something went wrong. Please try again."
     }

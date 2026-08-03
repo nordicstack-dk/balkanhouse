@@ -103,6 +103,8 @@ export const Orders: CollectionConfig = {
               name: 'customer',
               type: 'relationship',
               relationTo: 'customers',
+              // Indexed for customer→orders join lookups.
+              index: true,
               admin: {
                 description: 'Optional link to a saved customer record',
               },

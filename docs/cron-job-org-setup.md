@@ -94,9 +94,10 @@ If there are stale orders, `expired` is the count and `orderNumbers` lists which
 
 ## 6. What the job does
 
-For each order with status **awaiting_payment** where the payment link was sent more than `PAYMENT_LINK_EXPIRY_HOURS` ago:
+For each order with status **awaiting_payment** that has a `paymentLinkSentAt` older than
+`PAYMENT_LINK_EXPIRY_HOURS`:
 
-1. Uses `paymentLinkSentAt` when set; otherwise falls back to `updatedAt`.
+1. Uses only `paymentLinkSentAt` (orders with no sent link are never expired).
 2. Calls Frisbii `cancelPaymentSession` when `paymentReference` exists (404 = already gone).
 3. Sets status to **cancelled** and clears `paymentLinkUrl`, `paymentReference`, and `paymentLinkSentAt`.
 4. Triggers the existing cancelled-order email hook.

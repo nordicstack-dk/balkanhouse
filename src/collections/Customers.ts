@@ -8,10 +8,10 @@ export const Customers: CollectionConfig = {
   },
   admin: {
     useAsTitle: 'email',
-    defaultColumns: ['firstName', 'lastName', 'email', 'phone'],
+    defaultColumns: ['firstName', 'lastName', 'email', 'phone', 'newsletterOptIn'],
     listSearchableFields: ['firstName', 'lastName', 'email', 'phone'],
     group: 'Sales',
-    description: 'Optional guest customer records, kept for reference.',
+    description: 'Guest customer records from checkout, kept for reference and newsletter opt-in.',
   },
   fields: [
     {
@@ -34,6 +34,25 @@ export const Customers: CollectionConfig = {
       type: 'email',
       required: true,
       index: true,
+    },
+    {
+      name: 'newsletterOptIn',
+      type: 'checkbox',
+      defaultValue: false,
+      admin: {
+        description: 'Customer opted in to the newsletter at checkout (or later).',
+      },
+    },
+    {
+      name: 'privacyConsentAt',
+      type: 'date',
+      admin: {
+        readOnly: true,
+        description: 'When the customer last accepted privacy/data processing at checkout.',
+        date: {
+          pickerAppearance: 'dayAndTime',
+        },
+      },
     },
     {
       name: 'address',
@@ -62,6 +81,19 @@ export const Customers: CollectionConfig = {
           defaultValue: 'DK',
         },
       ],
+    },
+    {
+      name: 'orders',
+      type: 'join',
+      collection: 'orders',
+      on: 'customer',
+      admin: {
+        allowCreate: false,
+        defaultColumns: ['orderNumber', 'status', 'totalDkk', 'createdAt'],
+        description: 'Orders linked to this customer from checkout.',
+      },
+      defaultLimit: 20,
+      defaultSort: '-createdAt',
     },
   ],
 }

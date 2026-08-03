@@ -422,6 +422,14 @@ export interface Customer {
   phone: string;
   email: string;
   /**
+   * Customer opted in to the newsletter at checkout (or later).
+   */
+  newsletterOptIn?: boolean | null;
+  /**
+   * When the customer last accepted privacy/data processing at checkout.
+   */
+  privacyConsentAt?: string | null;
+  /**
    * Present for delivery orders; empty for pickup customers.
    */
   address?: {
@@ -429,6 +437,14 @@ export interface Customer {
     city?: string | null;
     postalCode?: string | null;
     country?: string | null;
+  };
+  /**
+   * Orders linked to this customer from checkout.
+   */
+  orders?: {
+    docs?: (number | Order)[];
+    hasNextPage?: boolean;
+    totalDocs?: number;
   };
   updatedAt: string;
   createdAt: string;
@@ -707,6 +723,8 @@ export interface CustomersSelect<T extends boolean = true> {
   lastName?: T;
   phone?: T;
   email?: T;
+  newsletterOptIn?: T;
+  privacyConsentAt?: T;
   address?:
     | T
     | {
@@ -715,6 +733,7 @@ export interface CustomersSelect<T extends boolean = true> {
         postalCode?: T;
         country?: T;
       };
+  orders?: T;
   updatedAt?: T;
   createdAt?: T;
 }

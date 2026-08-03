@@ -30,6 +30,8 @@ export function CheckoutForm() {
   const [city, setCity] = useState('')
   const [postalCode, setPostalCode] = useState('')
   const [pickupNotes, setPickupNotes] = useState('')
+  const [privacyConsent, setPrivacyConsent] = useState(false)
+  const [newsletterOptIn, setNewsletterOptIn] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [redirecting, setRedirecting] = useState(false)
@@ -102,6 +104,8 @@ export function CheckoutForm() {
             ? { street, city, postalCode }
             : undefined,
         pickupNotes: shippingMethod === SHIPPING_METHOD.PICKUP ? pickupNotes : undefined,
+        privacyConsent,
+        newsletterOptIn,
       },
       items,
       locale,
@@ -113,6 +117,7 @@ export function CheckoutForm() {
         missing_fields: t('errors.missing_fields'),
         missing_address: t('errors.missing_address'),
         invalid_email: t('errors.invalid_email'),
+        privacy_consent_required: t('errors.privacy_consent_required'),
         unavailable_products: t('errors.unavailable_products'),
         server_error: t('errors.server_error'),
       }
@@ -324,6 +329,35 @@ export function CheckoutForm() {
           <p className="text-sm text-text-muted">{t('deliveryInfo')}</p>
         )}
 
+        <fieldset className="space-y-3">
+          <legend className="sr-only">{t('consentsLegend')}</legend>
+          <label className="flex cursor-pointer items-start gap-3 text-sm text-text">
+            <input
+              id="privacyConsent"
+              name="privacyConsent"
+              type="checkbox"
+              required
+              checked={privacyConsent}
+              onChange={(e) => setPrivacyConsent(e.target.checked)}
+              className="mt-0.5 accent-burgundy"
+            />
+            <span>
+              {t('privacyConsent')} <span className="text-danger">*</span>
+            </span>
+          </label>
+          <label className="flex cursor-pointer items-start gap-3 text-sm text-text">
+            <input
+              id="newsletterOptIn"
+              name="newsletterOptIn"
+              type="checkbox"
+              checked={newsletterOptIn}
+              onChange={(e) => setNewsletterOptIn(e.target.checked)}
+              className="mt-0.5 accent-burgundy"
+            />
+            <span>{t('newsletterOptIn')}</span>
+          </label>
+        </fieldset>
+
         {error && (
           <p className="rounded-lg bg-danger/10 px-3 py-2 text-sm text-danger" role="alert">
             {error}
@@ -332,7 +366,7 @@ export function CheckoutForm() {
 
         <button
           type="submit"
-          disabled={submitting}
+          disabled={submitting || !privacyConsent}
           className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-burgundy py-3 font-semibold text-cream shadow-sm transition-all hover:bg-burgundy-dark hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:shadow-sm disabled:active:scale-100"
         >
           {submitting && <Spinner className="h-4 w-4" />}

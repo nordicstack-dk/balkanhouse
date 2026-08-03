@@ -22,12 +22,16 @@ export function getPaymentLinkExpiryHours(): number {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 72
 }
 
-function getPaymentLinkSentAt(order: Order): Date {
-  return new Date(order.paymentLinkSentAt ?? order.updatedAt)
+function getPaymentLinkSentAt(order: Order): Date | null {
+  if (!order.paymentLinkSentAt) return null
+  return new Date(order.paymentLinkSentAt)
 }
 
 function isPaymentLinkExpired(order: Order, cutoff: Date): boolean {
-  return getPaymentLinkSentAt(order) < cutoff
+  const sentAt = getPaymentLinkSentAt(order)
+  // Never expire orders that never had a payment link sent (no updatedAt fallback).
+  if (!sentAt) return false
+  return sentAt < cutoff
 }
 
 export type ExpirePaymentLinksResult = {
@@ -77,6 +81,11 @@ async function expireOneOrder(
       orderNumber: order.orderNumber,
       status: fresh.status,
     })
+    return { kind: 'noop' }
+  }
+
+  if (!fresh.paymentLinkSentAt) {
+    log.info('skip: payment link was never sent', { orderNumber: order.orderNumber })
     return { kind: 'noop' }
   }
 
@@ -158,6 +167,8 @@ export async function expirePaymentLinks(): Promise<ExpirePaymentLinksResult> {
       where: {
         and: [
           { status: { equals: ORDER_STATUS.AWAITING_PAYMENT } },
+          // Only expire links that were actually sent; never use updatedAt.
+          { paymentLinkSentAt: { exists: true } },
           { id: { greater_than: cursorId } },
         ],
       },
