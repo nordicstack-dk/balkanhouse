@@ -294,30 +294,60 @@ export async function getActivePromotions(): Promise<Promotion[]> {
 }
 
 /**
+ * Fetch a Payload global with graceful degradation. If the underlying table is
+ * missing (e.g. the schema hasn't been pushed to this database yet) or the DB is
+ * momentarily unavailable, return an empty fallback doc instead of throwing, so
+ * the storefront still renders (pages fall back to bundled translations). The
+ * error is not cached, so it recovers automatically once the DB is ready — this
+ * also keeps `next build` prerendering from failing on a fresh database.
+ */
+async function loadGlobalCached<T>(
+  cacheKey: string[],
+  fetcher: () => Promise<T>,
+  fallback: T,
+  label: string,
+): Promise<T> {
+  try {
+    return await unstable_cache(fetcher, cacheKey, {
+      revalidate: REVALIDATE_SECONDS,
+      tags: ['pages'],
+    })()
+  } catch (err) {
+    console.warn(
+      `[storefront] "${label}" global unavailable, using fallback:`,
+      err instanceof Error ? err.message : err,
+    )
+    return fallback
+  }
+}
+
+/**
  * Static-page content stored in Payload globals. These are localized, so each
  * language can have its own copy. Cached under the shared 'pages' tag, which the
  * global afterChange hooks invalidate on every edit.
  */
 export async function getAboutContent(locale: Locale): Promise<About> {
-  return unstable_cache(
+  return loadGlobalCached(
+    ['storefront', 'about', locale],
     async () => {
       const payload = await getPayloadClient()
       return payload.findGlobal({ slug: 'about', locale, depth: 0 })
     },
-    ['storefront', 'about', locale],
-    { revalidate: REVALIDATE_SECONDS, tags: ['pages'] },
-  )()
+    { id: 0 } as About,
+    'about',
+  )
 }
 
 export async function getFaqContent(locale: Locale): Promise<Faq> {
-  return unstable_cache(
+  return loadGlobalCached(
+    ['storefront', 'faq', locale],
     async () => {
       const payload = await getPayloadClient()
       return payload.findGlobal({ slug: 'faq', locale, depth: 0 })
     },
-    ['storefront', 'faq', locale],
-    { revalidate: REVALIDATE_SECONDS, tags: ['pages'] },
-  )()
+    { id: 0 } as Faq,
+    'faq',
+  )
 }
 
 /**
@@ -325,25 +355,27 @@ export async function getFaqContent(locale: Locale): Promise<Faq> {
  * Cached under the shared 'pages' tag, invalidated by the global's afterChange hook.
  */
 export async function getSiteSettings(): Promise<Setting> {
-  return unstable_cache(
+  return loadGlobalCached(
+    ['storefront', 'settings'],
     async () => {
       const payload = await getPayloadClient()
       return payload.findGlobal({ slug: 'settings', depth: 0 })
     },
-    ['storefront', 'settings'],
-    { revalidate: REVALIDATE_SECONDS, tags: ['pages'] },
-  )()
+    { id: 0, email: null, phone: null } as Setting,
+    'settings',
+  )
 }
 
 export async function getContactContent(locale: Locale): Promise<Contact> {
-  return unstable_cache(
+  return loadGlobalCached(
+    ['storefront', 'contact', locale],
     async () => {
       const payload = await getPayloadClient()
       return payload.findGlobal({ slug: 'contact', locale, depth: 0 })
     },
-    ['storefront', 'contact', locale],
-    { revalidate: REVALIDATE_SECONDS, tags: ['pages'] },
-  )()
+    { id: 0 } as Contact,
+    'contact',
+  )
 }
 
 export { getPromoPercentForProduct, getPromotedProducts } from './promotions'
