@@ -46,8 +46,27 @@ This document describes the expected Excel columns for bulk product import via `
 | `description_ro` | text | | Romanian description |
 | `description_da` | text | | Danish description |
 | `description_en` | text | | English description |
+| `image` | text | `BH-001` | Image file name without extension; defaults to the row's `sku`. Only used with `--images-dir` |
 | `country_of_origin` | text | `RO` | Optional origin |
 | `attributes` | JSON text | `{"brand":"Balkan House"}` | Optional extra attributes object |
+
+## Images
+
+Name each image file after its product SKU (`BH-001.png`), put them all in one folder, and pass
+that folder to the importer:
+
+```bash
+pnpm import:products -- products.xlsx --images-dir=product-images
+```
+
+- Accepted types: `.png`, `.jpg`, `.jpeg`, `.webp`
+- The `image` column overrides the file name (without extension); leave it empty to use the SKU
+- Uploads keep their file name, so the media library lists them as `BH-001.png` — easy to find by SKU
+- Re-running the import reuses the existing upload (matched by file name) instead of duplicating it
+- Products that already have an image are skipped; pass `--replace-images` to overwrite
+- The media `alt` text is set from the product title (falling back to the SKU), since that is what
+  the storefront reads out to screen readers
+- Without `--images-dir`, images are ignored entirely
 
 ## Allergen codes
 
@@ -77,6 +96,5 @@ pnpm import:products -- path/to/products.xlsx --dry-run
 
 ## Notes
 
-- Images are not imported from Excel; upload media in the admin and attach to products manually (or extend the script later).
 - Existing products are matched by `sku` and updated; new SKUs are created.
 - Categories must exist in the admin before import if `category_slug` is used.

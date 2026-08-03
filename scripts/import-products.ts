@@ -24,7 +24,11 @@ interface ImportRow {
   description: Partial<Record<Locale, string>>
   countryOfOrigin?: string
   attributes?: Record<string, unknown>
+  /** Image base name (without extension); defaults to the SKU. */
+  image?: string
 }
+
+const IMAGE_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.webp'] as const
 
 function normalizeHeader(header: string): string {
   return header.trim().toLowerCase().replace(/\s+/g, '_')
@@ -156,6 +160,8 @@ function parseRow(row: Record<string, string>, lineNumber: number): ImportRow {
   const ingredients = parseLocalizedField(row, 'ingredients')
   const description = parseLocalizedField(row, 'description')
   const countryOfOrigin = getCell(row, 'country_of_origin') || undefined
+  // Image file base name. Defaults to the SKU, so naming files BH-001.png is enough.
+  const image = getCell(row, 'image', 'image_name', 'image_filename') || undefined
 
   let attributes: Record<string, unknown> | undefined
   const attributesRaw = getCell(row, 'attributes')
@@ -179,7 +185,59 @@ function parseRow(row: Record<string, string>, lineNumber: number): ImportRow {
     description,
     countryOfOrigin,
     attributes,
+    image,
   }
+}
+
+/** Locate <baseName>.<ext> inside the images directory, trying each known extension. */
+function resolveImageFile(imagesDir: string, baseName: string): string | null {
+  // Allow the sheet to give a full file name (BH-001.png) as well as a bare SKU.
+  const existingExt = IMAGE_EXTENSIONS.find((ext) => baseName.toLowerCase().endsWith(ext))
+  if (existingExt) {
+    const direct = path.join(imagesDir, baseName)
+    return fs.existsSync(direct) ? direct : null
+  }
+
+  for (const ext of IMAGE_EXTENSIONS) {
+    const filePath = path.join(imagesDir, `${baseName}${ext}`)
+    if (fs.existsSync(filePath)) {
+      return filePath
+    }
+  }
+
+  return null
+}
+
+/**
+ * Upload the image if the media library does not already hold a file with that
+ * name, and return its id. Reusing by filename keeps re-imports idempotent
+ * instead of piling up duplicates.
+ */
+async function upsertMedia(
+  payload: Awaited<ReturnType<typeof getPayloadInstance>>,
+  imagePath: string,
+  alt: string,
+): Promise<number> {
+  const fileName = path.basename(imagePath)
+
+  const existing = await payload.find({
+    collection: 'media',
+    where: { filename: { equals: fileName } },
+    limit: 1,
+  })
+
+  const existingId = existing.docs[0]?.id
+  if (typeof existingId === 'number') {
+    return existingId
+  }
+
+  const created = await payload.create({
+    collection: 'media',
+    data: { alt },
+    filePath: imagePath,
+  })
+
+  return created.id
 }
 
 async function readRows(filePath: string): Promise<Record<string, string>[]> {
@@ -257,7 +315,14 @@ async function getPayloadInstance() {
   return getPayload({ config: await config })
 }
 
-async function importProducts(filePath: string, dryRun: boolean): Promise<void> {
+type ImportOptions = {
+  dryRun: boolean
+  imagesDir?: string
+  replaceImages: boolean
+}
+
+async function importProducts(filePath: string, options: ImportOptions): Promise<void> {
+  const { dryRun, imagesDir, replaceImages } = options
   if (!process.env.PAYLOAD_SECRET) {
     throw new Error('PAYLOAD_SECRET is not set in .env')
   }
@@ -270,16 +335,30 @@ async function importProducts(filePath: string, dryRun: boolean): Promise<void> 
     throw new Error(`File not found: ${filePath}`)
   }
 
+  if (imagesDir && !fs.existsSync(imagesDir)) {
+    throw new Error(`Images directory not found: ${imagesDir}`)
+  }
+
   const rawRows = await readRows(filePath)
   const rows = rawRows.map((row, index) => parseRow(row, index + 2))
 
   console.log(`Parsed ${rows.length} product row(s) from ${path.basename(filePath)}`)
+  if (imagesDir) {
+    console.log(`Images directory: ${imagesDir}`)
+  }
 
   if (dryRun) {
     console.log('Dry run — no database writes')
     rows.forEach((row) => {
       const title = row.title.ro ?? row.title.da ?? row.title.en ?? '(no title)'
-      console.log(`  ${row.sku} | ${title} | ${row.priceDkk} DKK | ${row.stockStatus}`)
+      let imageNote = ''
+      if (imagesDir) {
+        const found = resolveImageFile(imagesDir, row.image ?? row.sku)
+        imageNote = found ? ` | image: ${path.basename(found)}` : ' | image: NOT FOUND'
+      }
+      console.log(
+        `  ${row.sku} | ${title} | ${row.priceDkk} DKK | ${row.stockStatus}${imageNote}`,
+      )
     })
     return
   }
@@ -287,6 +366,35 @@ async function importProducts(filePath: string, dryRun: boolean): Promise<void> 
   const payload = await getPayloadInstance()
   let created = 0
   let updated = 0
+  let imagesAttached = 0
+  const imagesMissing: string[] = []
+
+  /**
+   * Resolve + upload the row's image and return the value for the product's
+   * `images` field, or undefined to leave the current images untouched.
+   */
+  async function imagesFieldFor(
+    row: ImportRow,
+    existingImages: unknown,
+  ): Promise<number[] | undefined> {
+    if (!imagesDir) return undefined
+
+    const hasImages = Array.isArray(existingImages) && existingImages.length > 0
+    if (hasImages && !replaceImages) return undefined
+
+    const imagePath = resolveImageFile(imagesDir, row.image ?? row.sku)
+    if (!imagePath) {
+      imagesMissing.push(row.sku)
+      return undefined
+    }
+
+    // Media.alt is required and is what the storefront renders for screen
+    // readers, so prefer the product name and fall back to the SKU.
+    const alt = row.title.ro ?? row.title.en ?? row.title.da ?? row.sku
+    const mediaId = await upsertMedia(payload, imagePath, alt)
+    imagesAttached += 1
+    return [mediaId]
+  }
 
   for (const row of rows) {
     const category = row.categorySlug ? await resolveCategoryId(payload, row.categorySlug) : undefined
@@ -314,6 +422,7 @@ async function importProducts(filePath: string, dryRun: boolean): Promise<void> 
 
     if (existing.docs.length > 0) {
       const id = existing.docs[0].id
+      const images = await imagesFieldFor(row, existing.docs[0].images)
 
       await payload.update({
         collection: 'products',
@@ -321,6 +430,7 @@ async function importProducts(filePath: string, dryRun: boolean): Promise<void> 
         data: {
           ...baseData,
           ...(row.title.ro ? { title: row.title.ro } : {}),
+          ...(images ? { images } : {}),
         },
         locale: 'ro',
       })
@@ -353,6 +463,8 @@ async function importProducts(filePath: string, dryRun: boolean): Promise<void> 
       updated += 1
       console.log(`Updated: ${row.sku}`)
     } else {
+      const images = await imagesFieldFor(row, undefined)
+
       const createdDoc = await payload.create({
         collection: 'products',
         data: {
@@ -360,6 +472,7 @@ async function importProducts(filePath: string, dryRun: boolean): Promise<void> 
           title: row.title.ro ?? row.sku,
           ingredients: row.ingredients.ro,
           description: row.description.ro ? toRichText(row.description.ro) : undefined,
+          ...(images ? { images } : {}),
         },
         locale: 'ro',
       })
@@ -399,18 +512,34 @@ async function importProducts(filePath: string, dryRun: boolean): Promise<void> 
   }
 
   console.log(`Done. Created: ${created}, updated: ${updated}`)
+
+  if (imagesDir) {
+    console.log(`Images attached: ${imagesAttached}`)
+    if (imagesMissing.length > 0) {
+      console.log(
+        `No image file found for ${imagesMissing.length} product(s): ${imagesMissing.join(', ')}`,
+      )
+    }
+  }
 }
 
 const args = process.argv.slice(2)
 const dryRun = args.includes('--dry-run')
+const replaceImages = args.includes('--replace-images')
+const imagesDirArg = args.find((arg) => arg.startsWith('--images-dir='))
+const imagesDir = imagesDirArg
+  ? path.resolve(imagesDirArg.slice('--images-dir='.length))
+  : undefined
 const fileArg = args.find((arg) => !arg.startsWith('--'))
 
 if (!fileArg) {
-  console.error('Usage: pnpm import:products -- <file.xlsx|file.csv> [--dry-run]')
+  console.error(
+    'Usage: pnpm import:products -- <file.xlsx|file.csv> [--dry-run] [--images-dir=<folder>] [--replace-images]',
+  )
   process.exit(1)
 }
 
-importProducts(path.resolve(fileArg), dryRun)
+importProducts(path.resolve(fileArg), { dryRun, imagesDir, replaceImages })
   .then(() => process.exit(0))
   .catch((error: unknown) => {
     console.error('Import failed:', error)
