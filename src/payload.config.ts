@@ -14,6 +14,9 @@ import { Orders } from './collections/Orders'
 import { Products } from './collections/Products'
 import { Promotions } from './collections/Promotions'
 import { Users } from './collections/Users'
+import { About } from './globals/About'
+import { Contact } from './globals/Contact'
+import { Faq } from './globals/Faq'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -54,6 +57,7 @@ export default buildConfig({
     },
   },
   collections: [Users, Media, Categories, Products, Promotions, Orders, Customers, OrderEmails],
+  globals: [About, Faq, Contact],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {

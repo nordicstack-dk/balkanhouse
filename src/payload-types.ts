@@ -80,7 +80,11 @@ export interface Config {
     'payload-preferences': PayloadPreference;
     'payload-migrations': PayloadMigration;
   };
-  collectionsJoins: {};
+  collectionsJoins: {
+    customers: {
+      orders: 'orders';
+    };
+  };
   collectionsSelect: {
     users: UsersSelect<false> | UsersSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
@@ -99,8 +103,16 @@ export interface Config {
     defaultIDType: number;
   };
   fallbackLocale: ('false' | 'none' | 'null') | false | null | ('ro' | 'da' | 'en') | ('ro' | 'da' | 'en')[];
-  globals: {};
-  globalsSelect: {};
+  globals: {
+    about: About;
+    faq: Faq;
+    contact: Contact;
+  };
+  globalsSelect: {
+    about: AboutSelect<false> | AboutSelect<true>;
+    faq: FaqSelect<false> | FaqSelect<true>;
+    contact: ContactSelect<false> | ContactSelect<true>;
+  };
   locale: 'ro' | 'da' | 'en';
   widgets: {
     collections: CollectionsWidget;
@@ -414,7 +426,7 @@ export interface Order {
   createdAt: string;
 }
 /**
- * Optional guest customer records, kept for reference.
+ * Guest customer records from checkout, kept for reference and newsletter opt-in.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "customers".
@@ -802,6 +814,118 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
   batch?: T;
   updatedAt?: T;
   createdAt?: T;
+}
+/**
+ * Content for the "Despre" (About us) page.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "about".
+ */
+export interface About {
+  id: number;
+  /**
+   * Page heading (translate per language).
+   */
+  title?: string | null;
+  /**
+   * Body text. Leave a blank line between paragraphs to split them.
+   */
+  content?: string | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * Frequently asked questions shown on the FAQ page.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "faq".
+ */
+export interface Faq {
+  id: number;
+  /**
+   * Page heading (translate per language).
+   */
+  title?: string | null;
+  /**
+   * Each entry is shown as an expandable question on the FAQ page.
+   */
+  items?:
+    | {
+        question: string;
+        answer: string;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * Content for the Contact page.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "contact".
+ */
+export interface Contact {
+  id: number;
+  /**
+   * Page heading (translate per language).
+   */
+  title?: string | null;
+  /**
+   * Short introduction shown under the heading (translate per language).
+   */
+  intro?: string | null;
+  /**
+   * Contact email address (shared across languages).
+   */
+  email?: string | null;
+  /**
+   * Contact phone number (shared across languages).
+   */
+  phone?: string | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "about_select".
+ */
+export interface AboutSelect<T extends boolean = true> {
+  title?: T;
+  content?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "faq_select".
+ */
+export interface FaqSelect<T extends boolean = true> {
+  title?: T;
+  items?:
+    | T
+    | {
+        question?: T;
+        answer?: T;
+        id?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "contact_select".
+ */
+export interface ContactSelect<T extends boolean = true> {
+  title?: T;
+  intro?: T;
+  email?: T;
+  phone?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

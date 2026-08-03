@@ -3,7 +3,7 @@ import type { Where } from 'payload'
 
 import type { Locale } from '@/i18n/routing'
 import { STOCK_STATUS } from '@/lib/contracts'
-import type { Category, Media, Product, Promotion } from '@/payload-types'
+import type { About, Category, Contact, Faq, Media, Product, Promotion } from '@/payload-types'
 
 import { getPayloadClient } from './payload'
 import { matchesSearch } from './search'
@@ -290,6 +290,44 @@ export async function getActivePromotions(): Promise<Promotion[]> {
     },
     ['storefront', 'promotions'],
     { revalidate: REVALIDATE_SECONDS, tags: ['promotions'] },
+  )()
+}
+
+/**
+ * Static-page content stored in Payload globals. These are localized, so each
+ * language can have its own copy. Cached under the shared 'pages' tag, which the
+ * global afterChange hooks invalidate on every edit.
+ */
+export async function getAboutContent(locale: Locale): Promise<About> {
+  return unstable_cache(
+    async () => {
+      const payload = await getPayloadClient()
+      return payload.findGlobal({ slug: 'about', locale, depth: 0 })
+    },
+    ['storefront', 'about', locale],
+    { revalidate: REVALIDATE_SECONDS, tags: ['pages'] },
+  )()
+}
+
+export async function getFaqContent(locale: Locale): Promise<Faq> {
+  return unstable_cache(
+    async () => {
+      const payload = await getPayloadClient()
+      return payload.findGlobal({ slug: 'faq', locale, depth: 0 })
+    },
+    ['storefront', 'faq', locale],
+    { revalidate: REVALIDATE_SECONDS, tags: ['pages'] },
+  )()
+}
+
+export async function getContactContent(locale: Locale): Promise<Contact> {
+  return unstable_cache(
+    async () => {
+      const payload = await getPayloadClient()
+      return payload.findGlobal({ slug: 'contact', locale, depth: 0 })
+    },
+    ['storefront', 'contact', locale],
+    { revalidate: REVALIDATE_SECONDS, tags: ['pages'] },
   )()
 }
 

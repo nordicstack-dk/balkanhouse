@@ -1,6 +1,6 @@
 import { revalidateTag } from 'next/cache'
 
-export type StorefrontCacheTag = 'products' | 'categories' | 'promotions'
+export type StorefrontCacheTag = 'products' | 'categories' | 'promotions' | 'pages'
 
 /**
  * Invalidate storefront caches after a CMS change so edits appear immediately
