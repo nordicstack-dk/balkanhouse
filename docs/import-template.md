@@ -67,6 +67,21 @@ pnpm import:products -- products.xlsx --images-dir=product-images
   the storefront reads out to screen readers
 - Without `--images-dir`, images are ignored entirely
 
+### Syncing images uploaded only in Vercel Storage
+
+Files uploaded in the Vercel Blob / Storage UI are **not** Payload Media documents. They will not
+appear in Admin → Media and Excel import will not link them.
+
+To register those orphan image blobs and attach them to products:
+
+1. Name each file after the product SKU (`12312312333.jpg`)
+2. Upload it in Vercel Storage
+3. Open **Admin → Dashboard** and click **Sync blob images**
+
+The sync creates missing Media rows for orphan `.png` / `.jpg` / `.jpeg` / `.webp` blobs and sets
+`product.images` when the filename stem matches a product SKU. Products that already have an image
+are skipped unless you check **Replace existing product images**.
+
 ## Allergen codes
 
 Use these values in the `allergens` column (comma-separated):

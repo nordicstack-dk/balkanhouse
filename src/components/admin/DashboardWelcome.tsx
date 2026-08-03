@@ -1,3 +1,5 @@
+import { SyncBlobMediaButton } from '@/components/admin/SyncBlobMediaButton'
+
 /**
  * A short orientation note shown at the top of the admin dashboard.
  * Server component with inline styles (no global admin CSS dependency),
@@ -29,6 +31,7 @@ export function DashboardWelcome() {
         new orders arrive — confirm them, send the payment link, then mark as shipped.{' '}
         <strong>Catalog</strong> holds products, categories, promotions and images.
       </p>
+      <SyncBlobMediaButton />
     </div>
   )
 }
