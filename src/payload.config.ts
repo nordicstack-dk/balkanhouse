@@ -17,6 +17,7 @@ import { Users } from './collections/Users'
 import { About } from './globals/About'
 import { Contact } from './globals/Contact'
 import { Faq } from './globals/Faq'
+import { Settings } from './globals/Settings'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -57,7 +58,7 @@ export default buildConfig({
     },
   },
   collections: [Users, Media, Categories, Products, Promotions, Orders, Customers, OrderEmails],
-  globals: [About, Faq, Contact],
+  globals: [Settings, About, Faq, Contact],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {

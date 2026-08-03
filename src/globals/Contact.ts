@@ -23,24 +23,20 @@ export const Contact: GlobalConfig = {
     },
     {
       name: 'intro',
-      type: 'textarea',
+      type: 'richText',
       localized: true,
       admin: {
-        description: 'Short introduction shown under the heading (translate per language).',
+        description:
+          'Introduction shown under the heading (translate per language). Use the toolbar for headings, bold, lists, links, etc.',
       },
     },
     {
-      name: 'email',
-      type: 'text',
+      name: 'body',
+      type: 'richText',
+      localized: true,
       admin: {
-        description: 'Contact email address (shared across languages).',
-      },
-    },
-    {
-      name: 'phone',
-      type: 'text',
-      admin: {
-        description: 'Contact phone number (shared across languages).',
+        description:
+          'Optional free-form content shown below the contact details (translate per language). Format it however you like.',
       },
     },
   ],

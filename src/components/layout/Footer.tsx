@@ -4,10 +4,18 @@ import { useTranslations } from 'next-intl'
 
 import { Link } from '@/i18n/navigation'
 
-export function Footer() {
+type FooterProps = {
+  supportEmail?: string | null
+  supportPhone?: string | null
+}
+
+export function Footer({ supportEmail, supportPhone }: FooterProps) {
   const t = useTranslations('footer')
   const tNav = useTranslations('nav')
   const tContact = useTranslations('contact')
+
+  const email = supportEmail?.trim() || tContact('emailValue')
+  const phone = supportPhone?.trim() || tContact('phoneValue')
 
   return (
     <footer className="on-dark mt-auto bg-forest text-cream">
@@ -52,14 +60,14 @@ export function Footer() {
           <ul className="space-y-2 text-sm">
             <li>
               <span className="text-cream/70">{tContact('email')}: </span>
-              <a href={`mailto:${tContact('emailValue')}`} className="transition-colors hover:text-gold hover:underline">
-                {tContact('emailValue')}
+              <a href={`mailto:${email}`} className="transition-colors hover:text-gold hover:underline">
+                {email}
               </a>
             </li>
             <li>
               <span className="text-cream/70">{tContact('phone')}: </span>
-              <a href={`tel:${tContact('phoneValue').replace(/\s/g, '')}`} className="transition-colors hover:text-gold hover:underline">
-                {tContact('phoneValue')}
+              <a href={`tel:${phone.replace(/\s/g, '')}`} className="transition-colors hover:text-gold hover:underline">
+                {phone}
               </a>
             </li>
           </ul>

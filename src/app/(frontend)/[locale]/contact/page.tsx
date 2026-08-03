@@ -1,7 +1,9 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 
+import { RichTextContent } from '@/components/ui/RichTextContent'
 import type { Locale } from '@/i18n/routing'
-import { getContactContent } from '@/lib/storefront'
+import { getContactContent, getSiteSettings } from '@/lib/storefront'
+import { isLexicalEmpty } from '@/lib/richtext'
 
 type Props = {
   params: Promise<{ locale: string }>
@@ -11,20 +13,26 @@ export default async function ContactPage({ params }: Props) {
   const { locale } = await params
   setRequestLocale(locale as Locale)
 
-  const [content, t] = await Promise.all([
+  const [content, settings, t] = await Promise.all([
     getContactContent(locale as Locale),
+    getSiteSettings(),
     getTranslations('contact'),
   ])
 
   const title = content.title?.trim() || t('title')
-  const intro = content.intro?.trim() || t('intro')
-  const email = content.email?.trim() || t('emailValue')
-  const phone = content.phone?.trim() || t('phoneValue')
+  const email = settings.email?.trim() || t('emailValue')
+  const phone = settings.phone?.trim() || t('phoneValue')
+  const hasIntro = !isLexicalEmpty(content.intro)
+  const hasBody = !isLexicalEmpty(content.body)
 
   return (
     <div className="max-w-3xl">
       <h1 className="mb-4 text-3xl font-bold text-text">{title}</h1>
-      <p className="mb-8 text-lg text-text-muted">{intro}</p>
+      {hasIntro ? (
+        <RichTextContent data={content.intro} className="mb-8" />
+      ) : (
+        <p className="mb-8 text-lg text-text-muted">{t('intro')}</p>
+      )}
       <div className="space-y-6 rounded-xl border border-cream-dark bg-white p-8">
         <div>
           <p className="text-sm font-semibold uppercase tracking-wide text-text-muted">
@@ -49,6 +57,7 @@ export default async function ContactPage({ params }: Props) {
           </a>
         </div>
       </div>
+      {hasBody && <RichTextContent data={content.body} className="mt-8" />}
     </div>
   )
 }

@@ -104,11 +104,13 @@ export interface Config {
   };
   fallbackLocale: ('false' | 'none' | 'null') | false | null | ('ro' | 'da' | 'en') | ('ro' | 'da' | 'en')[];
   globals: {
+    settings: Setting;
     about: About;
     faq: Faq;
     contact: Contact;
   };
   globalsSelect: {
+    settings: SettingsSelect<false> | SettingsSelect<true>;
     about: AboutSelect<false> | AboutSelect<true>;
     faq: FaqSelect<false> | FaqSelect<true>;
     contact: ContactSelect<false> | ContactSelect<true>;
@@ -816,6 +818,25 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
   createdAt?: T;
 }
 /**
+ * Site-wide contact details used in the footer, contact page, and anywhere the shop shows its own email or phone.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "settings".
+ */
+export interface Setting {
+  id: number;
+  /**
+   * Public support email address (shared across all languages).
+   */
+  email?: string | null;
+  /**
+   * Public support phone number (shared across all languages).
+   */
+  phone?: string | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
  * Content for the "Despre" (About us) page.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -828,9 +849,23 @@ export interface About {
    */
   title?: string | null;
   /**
-   * Body text. Leave a blank line between paragraphs to split them.
+   * Full page content (translate per language). Use the toolbar for headings, bold, lists, links, etc.
    */
-  content?: string | null;
+  content?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
   updatedAt?: string | null;
   createdAt?: string | null;
 }
@@ -872,19 +907,54 @@ export interface Contact {
    */
   title?: string | null;
   /**
-   * Short introduction shown under the heading (translate per language).
+   * Introduction shown under the heading (translate per language). Use the toolbar for headings, bold, lists, links, etc.
    */
-  intro?: string | null;
+  intro?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
   /**
-   * Contact email address (shared across languages).
+   * Optional free-form content shown below the contact details (translate per language). Format it however you like.
    */
-  email?: string | null;
-  /**
-   * Contact phone number (shared across languages).
-   */
-  phone?: string | null;
+  body?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
   updatedAt?: string | null;
   createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "settings_select".
+ */
+export interface SettingsSelect<T extends boolean = true> {
+  email?: T;
+  phone?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -921,8 +991,7 @@ export interface FaqSelect<T extends boolean = true> {
 export interface ContactSelect<T extends boolean = true> {
   title?: T;
   intro?: T;
-  email?: T;
-  phone?: T;
+  body?: T;
   updatedAt?: T;
   createdAt?: T;
   globalType?: T;

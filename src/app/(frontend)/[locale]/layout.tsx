@@ -7,6 +7,7 @@ import { Footer } from '@/components/layout/Footer'
 import { Header } from '@/components/layout/Header'
 import { CartProvider } from '@/components/cart/CartProvider'
 import { routing, type Locale } from '@/i18n/routing'
+import { getSiteSettings } from '@/lib/storefront'
 
 type Props = {
   children: React.ReactNode
@@ -35,7 +36,7 @@ export default async function LocaleLayout({ children, params }: Props) {
   }
 
   setRequestLocale(locale)
-  const messages = await getMessages()
+  const [messages, settings] = await Promise.all([getMessages(), getSiteSettings()])
 
   return (
     <NextIntlClientProvider messages={messages}>
@@ -43,7 +44,7 @@ export default async function LocaleLayout({ children, params }: Props) {
         <div className="flex min-h-screen flex-col">
           <Header />
           <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">{children}</main>
-          <Footer />
+          <Footer supportEmail={settings.email} supportPhone={settings.phone} />
         </div>
       </CartProvider>
     </NextIntlClientProvider>

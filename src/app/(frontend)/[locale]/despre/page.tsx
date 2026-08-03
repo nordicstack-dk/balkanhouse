@@ -1,7 +1,9 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 
+import { RichTextContent } from '@/components/ui/RichTextContent'
 import type { Locale } from '@/i18n/routing'
 import { getAboutContent } from '@/lib/storefront'
+import { isLexicalEmpty } from '@/lib/richtext'
 
 type Props = {
   params: Promise<{ locale: string }>
@@ -17,20 +19,16 @@ export default async function AboutPage({ params }: Props) {
   ])
 
   const title = content.title?.trim() || t('title')
-  const body = content.content?.trim() || t('content')
-  const paragraphs = body
-    .split(/\n{2,}/)
-    .map((p) => p.trim())
-    .filter(Boolean)
+  const hasBody = !isLexicalEmpty(content.content)
 
   return (
-    <article className="prose prose-lg max-w-3xl">
+    <article className="max-w-3xl">
       <h1 className="text-3xl font-bold text-text">{title}</h1>
-      {paragraphs.map((paragraph, i) => (
-        <p key={i} className="mt-6 whitespace-pre-line text-lg leading-relaxed text-text-muted">
-          {paragraph}
-        </p>
-      ))}
+      {hasBody ? (
+        <RichTextContent data={content.content} className="mt-6" />
+      ) : (
+        <p className="mt-6 text-lg leading-relaxed text-text-muted">{t('content')}</p>
+      )}
     </article>
   )
 }

@@ -3,7 +3,7 @@ import type { Where } from 'payload'
 
 import type { Locale } from '@/i18n/routing'
 import { STOCK_STATUS } from '@/lib/contracts'
-import type { About, Category, Contact, Faq, Media, Product, Promotion } from '@/payload-types'
+import type { About, Category, Contact, Faq, Media, Product, Promotion, Setting } from '@/payload-types'
 
 import { getPayloadClient } from './payload'
 import { matchesSearch } from './search'
@@ -316,6 +316,21 @@ export async function getFaqContent(locale: Locale): Promise<Faq> {
       return payload.findGlobal({ slug: 'faq', locale, depth: 0 })
     },
     ['storefront', 'faq', locale],
+    { revalidate: REVALIDATE_SECONDS, tags: ['pages'] },
+  )()
+}
+
+/**
+ * Site-wide settings (support email/phone). Not localized, so no locale needed.
+ * Cached under the shared 'pages' tag, invalidated by the global's afterChange hook.
+ */
+export async function getSiteSettings(): Promise<Setting> {
+  return unstable_cache(
+    async () => {
+      const payload = await getPayloadClient()
+      return payload.findGlobal({ slug: 'settings', depth: 0 })
+    },
+    ['storefront', 'settings'],
     { revalidate: REVALIDATE_SECONDS, tags: ['pages'] },
   )()
 }

@@ -23,10 +23,11 @@ export const About: GlobalConfig = {
     },
     {
       name: 'content',
-      type: 'textarea',
+      type: 'richText',
       localized: true,
       admin: {
-        description: 'Body text. Leave a blank line between paragraphs to split them.',
+        description:
+          'Full page content (translate per language). Use the toolbar for headings, bold, lists, links, etc.',
       },
     },
   ],
