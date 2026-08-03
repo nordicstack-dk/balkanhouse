@@ -1,5 +1,3 @@
-import { SyncBlobMediaButton } from '@/components/admin/SyncBlobMediaButton'
-
 /**
  * A short orientation note shown at the top of the admin dashboard.
  * Server component with inline styles (no global admin CSS dependency),
@@ -29,9 +27,9 @@ export function DashboardWelcome() {
       <p style={{ margin: 0, color: '#5c4a42', lineHeight: 1.5 }}>
         Manage your shop from the sections in the sidebar. <strong>Sales → Orders</strong> is where
         new orders arrive — confirm them, send the payment link, then mark as shipped.{' '}
-        <strong>Catalog</strong> holds products, categories, promotions and images.
+        <strong>Catalog</strong> holds products, categories, promotions and images. Bulk-import
+        products from Excel on the <strong>Products</strong> list.
       </p>
-      <SyncBlobMediaButton />
     </div>
   )
 }

@@ -1,6 +1,10 @@
 # Product import template
 
-This document describes the expected Excel columns for bulk product import via `pnpm import:products`.
+This document describes the expected Excel columns for bulk product import.
+
+> **Primary path:** Admin → **Catalog → Products** → upload the file in the import panel above the list.
+
+> **CLI (automation / local image folders):** `pnpm import:products`
 
 > **Ready-to-use file:** [`product-import-template.xlsx`](./product-import-template.xlsx) — a formatted
 > workbook with one column per language, dropdowns for unit/stock/category, an example row to delete,
@@ -46,13 +50,27 @@ This document describes the expected Excel columns for bulk product import via `
 | `description_ro` | text | | Romanian description |
 | `description_da` | text | | Danish description |
 | `description_en` | text | | English description |
-| `image` | text | `BH-001` | Image file name without extension; defaults to the row's `sku`. Only used with `--images-dir` |
+| `image` | text | `BH-001` | Image file name without extension; defaults to the row's `sku` |
 | `country_of_origin` | text | `RO` | Optional origin |
 
 ## Images
 
-Name each image file after its product SKU (`BH-001.png`), put them all in one folder, and pass
-that folder to the importer:
+Images are linked by **SKU filename** automatically:
+
+- Saving a product with no images attaches Media (or an orphan Vercel Blob) named like the SKU
+- Uploading Media named `SKU.jpg` attaches it to the matching product when that product has no image
+- Excel import (Admin or CLI) does the same (empty `image` column → SKU), including blobs already in Vercel Storage
+
+### Admin import
+
+1. Open **Catalog → Products**
+2. Choose your `.xlsx` / `.csv` in the import panel
+3. Optionally check **Replace existing product images**
+4. Click **Import**
+
+### Local folder upload (CLI only)
+
+To upload files from disk during CLI import, put them in a folder and pass `--images-dir`:
 
 ```bash
 pnpm import:products -- products.xlsx --images-dir=product-images
@@ -62,25 +80,16 @@ pnpm import:products -- products.xlsx --images-dir=product-images
 - The `image` column overrides the file name (without extension); leave it empty to use the SKU
 - Uploads keep their file name, so the media library lists them as `BH-001.png` — easy to find by SKU
 - Re-running the import reuses the existing upload (matched by file name) instead of duplicating it
-- Products that already have an image are skipped; pass `--replace-images` to overwrite
+- Products that already have an image are skipped; pass `--replace-images` (CLI) or check the Admin checkbox to overwrite
 - The media `alt` text is set from the product title (falling back to the SKU), since that is what
   the storefront reads out to screen readers
-- Without `--images-dir`, images are ignored entirely
+- Without `--images-dir`, import still links existing Media / Vercel Blob files by SKU
 
-### Syncing images uploaded only in Vercel Storage
+### Orphan Vercel Storage files
 
-Files uploaded in the Vercel Blob / Storage UI are **not** Payload Media documents. They will not
-appear in Admin → Media and Excel import will not link them.
-
-To register those orphan image blobs and attach them to products:
-
-1. Name each file after the product SKU (`12312312333.jpg`)
-2. Upload it in Vercel Storage
-3. Open **Admin → Dashboard** and click **Sync blob images**
-
-The sync creates missing Media rows for orphan `.png` / `.jpg` / `.jpeg` / `.webp` blobs and sets
-`product.images` when the filename stem matches a product SKU. Products that already have an image
-are skipped unless you check **Replace existing product images**.
+Files uploaded only in the Vercel Blob / Storage UI are registered as Media when product save, Media
+upload, or Excel import finds a matching SKU filename. Day-to-day use does not need a manual sync
+button.
 
 ## Allergen codes
 
@@ -96,7 +105,7 @@ Use these values in the `allergens` column (comma-separated):
 | `low` | Low stock |
 | `out` | Out of stock |
 
-## Usage
+## CLI usage
 
 ```bash
 pnpm import:products -- path/to/products.xlsx

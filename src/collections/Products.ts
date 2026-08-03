@@ -6,6 +6,10 @@ import {
   STOCK_STATUS_OPTIONS,
   UNIT_OPTIONS,
 } from '@/lib/contracts'
+import {
+  imagesFieldHasValues,
+  resolveImagesForProductSku,
+} from '@/lib/product-image-link'
 import { formatProductAdminLabel, resolveLocalizedString } from '@/lib/products/admin-label'
 import { revalidateStorefrontTags } from '@/lib/revalidate-storefront'
 
@@ -21,13 +25,16 @@ export const Products: CollectionConfig = {
     listSearchableFields: ['sku', 'title', 'adminLabel'],
     group: 'Catalog',
     description: 'Products shown in the shop. Identity, price and stock live in the sidebar; content in the main panel.',
+    components: {
+      beforeListTable: ['@/components/admin/ProductImportPanel#ProductImportPanel'],
+    },
   },
   hooks: {
     // Promotions cache also embeds product docs (depth 2), so invalidate both.
     afterChange: [() => revalidateStorefrontTags('products', 'promotions')],
     afterDelete: [() => revalidateStorefrontTags('products', 'promotions')],
     beforeChange: [
-      ({ data, originalDoc, req }) => {
+      async ({ data, originalDoc, req }) => {
         if (!data) {
           return data
         }
@@ -38,6 +45,27 @@ export const Products: CollectionConfig = {
           req.locale,
         )
         data.adminLabel = formatProductAdminLabel(sku, title)
+
+        // Empty images → attach Media (or orphan Blob) named after the SKU.
+        const incomingImages = data.images !== undefined ? data.images : originalDoc?.images
+        if (
+          !req.context?.skipSkuImageAutoLink &&
+          !imagesFieldHasValues(incomingImages) &&
+          typeof sku === 'string' &&
+          sku.trim()
+        ) {
+          try {
+            const resolved = await resolveImagesForProductSku(req.payload, sku, {
+              alt: title || sku,
+              req,
+            })
+            if (resolved) {
+              data.images = resolved
+            }
+          } catch (error) {
+            console.error('[products] SKU image auto-link failed:', error)
+          }
+        }
 
         return data
       },

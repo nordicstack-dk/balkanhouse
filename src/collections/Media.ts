@@ -1,5 +1,6 @@
 import type { CollectionConfig } from 'payload'
 
+import { autoLinkMediaToMatchingProduct } from '@/lib/product-image-link'
 import { revalidateStorefrontTags } from '@/lib/revalidate-storefront'
 
 export const Media: CollectionConfig = {
@@ -19,8 +20,17 @@ export const Media: CollectionConfig = {
     description: 'Images used across the shop. Product photos can be uploaded here or directly from a product.',
   },
   hooks: {
-    // Product and promotion caches embed media docs (image URLs).
-    afterChange: [() => revalidateStorefrontTags('products', 'promotions')],
+    afterChange: [
+      () => revalidateStorefrontTags('products', 'promotions'),
+      async ({ doc, req, context }) => {
+        if (context?.skipProductImageAutoLink) return
+        try {
+          await autoLinkMediaToMatchingProduct(req.payload, doc, { req })
+        } catch (error) {
+          console.error('[media] Product image auto-link failed:', error)
+        }
+      },
+    ],
     afterDelete: [() => revalidateStorefrontTags('products', 'promotions')],
   },
   fields: [
