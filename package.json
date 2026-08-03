@@ -19,6 +19,7 @@
     "verify:product-images": "cross-env PAYLOAD_DISABLE_DB_PUSH=true tsx scripts/verify-product-image-urls.ts",
     "seed:products": "tsx scripts/seed-products.ts",
     "seed:promotions": "tsx scripts/seed-promotions.ts",
+    "seed:pages": "tsx scripts/seed-page-content.ts",
     "db:push": "tsx scripts/db-push.ts",
     "backfill:titles": "tsx scripts/backfill-product-titles.ts",
     "backfill:admin-labels": "tsx scripts/backfill-product-admin-labels.ts",
