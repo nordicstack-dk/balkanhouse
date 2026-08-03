@@ -49,9 +49,6 @@ export default buildConfig({
     meta: {
       titleSuffix: ' — Balkan House',
     },
-    components: {
-      beforeDashboard: ['@/components/admin/DashboardWelcome#DashboardWelcome'],
-    },
     importMap: {
       baseDir: path.resolve(dirname),
     },
