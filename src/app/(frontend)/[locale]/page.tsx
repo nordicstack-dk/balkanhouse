@@ -1,9 +1,9 @@
-import { setRequestLocale } from 'next-intl/server'
+import { getTranslations, setRequestLocale } from 'next-intl/server'
 
 import { FeaturedCategories } from '@/components/home/FeaturedCategories'
 import { Hero } from '@/components/home/Hero'
-import { PromotionsCarousel } from '@/components/home/PromotionsCarousel'
 import { ProductCard } from '@/components/products/ProductCard'
+import { ProductCarousel } from '@/components/products/ProductCarousel'
 import { assertLocale } from '@/i18n/locale-guard'
 import {
   getActivePromotions,
@@ -24,9 +24,10 @@ export default async function HomePage({ params }: Props) {
   const locale = assertLocale(rawLocale)
   setRequestLocale(locale)
 
-  const [categories, promotions] = await Promise.all([
+  const [categories, promotions, t] = await Promise.all([
     getCategories(locale),
     getActivePromotions(),
+    getTranslations('home'),
   ])
   const promotedProducts = getPromotedProducts(promotions)
 
@@ -34,7 +35,7 @@ export default async function HomePage({ params }: Props) {
     <div>
       <Hero />
       {promotedProducts.length > 0 && (
-        <PromotionsCarousel>
+        <ProductCarousel title={t('promotionsTitle')}>
           {promotedProducts.map((product) => (
             <ProductCard
               key={product.id}
@@ -42,7 +43,7 @@ export default async function HomePage({ params }: Props) {
               promoPercent={getPromoPercentForProduct(product.id, promotions)}
             />
           ))}
-        </PromotionsCarousel>
+        </ProductCarousel>
       )}
       <FeaturedCategories categories={categories} />
     </div>

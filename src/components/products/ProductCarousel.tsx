@@ -5,7 +5,11 @@ import { useTranslations } from 'next-intl'
 
 const AUTO_ADVANCE_MS = 4500
 
-type PromotionsCarouselProps = {
+type ProductCarouselProps = {
+  /** Heading and accessible label for the carousel. */
+  title: string
+  /** Auto-advance through items when they overflow. Defaults to true. */
+  autoAdvance?: boolean
   /**
    * Server-rendered product cards. Passing them as children keeps the card
    * markup out of the client bundle and the product data out of the RSC
@@ -14,7 +18,7 @@ type PromotionsCarouselProps = {
   children: ReactNode
 }
 
-export function PromotionsCarousel({ children }: PromotionsCarouselProps) {
+export function ProductCarousel({ title, autoAdvance = true, children }: ProductCarouselProps) {
   const t = useTranslations('home')
   const trackRef = useRef<HTMLDivElement>(null)
   const pausedRef = useRef(false)
@@ -46,7 +50,7 @@ export function PromotionsCarousel({ children }: PromotionsCarouselProps) {
   }, [itemCount])
 
   useEffect(() => {
-    if (!hasOverflow) return
+    if (!autoAdvance || !hasOverflow) return
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
 
     const interval = setInterval(() => {
@@ -54,14 +58,14 @@ export function PromotionsCarousel({ children }: PromotionsCarouselProps) {
       scrollByPage(1)
     }, AUTO_ADVANCE_MS)
     return () => clearInterval(interval)
-  }, [hasOverflow, scrollByPage])
+  }, [autoAdvance, hasOverflow, scrollByPage])
 
   if (!itemCount) return null
 
   return (
-    <section className="mt-12" aria-roledescription="carousel" aria-label={t('promotionsTitle')}>
+    <section className="mt-12" aria-roledescription="carousel" aria-label={title}>
       <div className="mb-6 flex items-center justify-between gap-4">
-        <h2 className="text-2xl font-bold text-text">{t('promotionsTitle')}</h2>
+        <h2 className="text-2xl font-bold text-text">{title}</h2>
         {hasOverflow && (
           <div className="flex gap-2">
             <CarouselArrow direction={-1} label={t('carouselPrev')} onClick={scrollByPage} />

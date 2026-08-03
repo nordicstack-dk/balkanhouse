@@ -4,7 +4,8 @@ import { notFound } from 'next/navigation'
 
 import { AddToCartButton } from '@/components/products/AddToCartButton'
 import { AllergenList } from '@/components/products/AllergenList'
-import { ProductGrid } from '@/components/products/ProductGrid'
+import { ProductCard } from '@/components/products/ProductCard'
+import { ProductCarousel } from '@/components/products/ProductCarousel'
 import { PromoBadge } from '@/components/products/PromoBadge'
 import { StockBadge } from '@/components/products/StockBadge'
 import { RichText } from '@/components/ui/RichText'
@@ -129,10 +130,15 @@ export default async function ProductPage({ params }: Props) {
       </div>
 
       {relatedProducts.length > 0 && (
-        <section>
-          <h2 className="mb-4 text-2xl font-bold text-text">{t('relatedProducts')}</h2>
-          <ProductGrid products={relatedProducts} promotions={promotions} />
-        </section>
+        <ProductCarousel title={t('relatedProducts')}>
+          {relatedProducts.map((relatedProduct) => (
+            <ProductCard
+              key={relatedProduct.id}
+              product={relatedProduct}
+              promoPercent={getPromoPercentForProduct(relatedProduct.id, promotions)}
+            />
+          ))}
+        </ProductCarousel>
       )}
     </div>
   )
