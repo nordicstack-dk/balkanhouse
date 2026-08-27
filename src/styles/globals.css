@@ -69,10 +69,14 @@
 }
 
 /*
- * Paper grain — a fixed, non-interactive overlay that breaks the digital
- * flatness of large cream areas and reads as the woven/printed surface of a
- * market stall label. Fixed and pointer-events-none so it composites once and
- * never repaints during scroll.
+ * Paper grain — a fixed, non-interactive overlay that breaks up the digital
+ * flatness of large cream areas.
+ *
+ * Deliberately NOT `mix-blend-mode: multiply`, which looked better but made the
+ * compositor read and blend the whole backdrop every frame. On a large
+ * high-DPI window that is a full-screen blend per scrolled frame, and it showed
+ * as scroll lag. Plain opacity keeps this element on its own layer, so
+ * scrolling only moves layers around.
  */
 .bh-grain {
   position: fixed;
@@ -80,7 +84,6 @@
   z-index: var(--bh-z-grain);
   pointer-events: none;
   opacity: 0.05;
-  mix-blend-mode: multiply;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
