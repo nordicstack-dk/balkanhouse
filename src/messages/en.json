@@ -22,6 +22,7 @@
   },
   "shop": {
     "title": "Shop",
+    "offers": "Special offers",
     "allCategories": "All categories",
     "searchPlaceholder": "Search products...",
     "search": "Search",

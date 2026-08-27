@@ -35,7 +35,7 @@ export default async function FaqPage({ params }: Props) {
 
   return (
     <div className="max-w-3xl">
-      <h1 className="mb-8 text-3xl font-bold text-text">{title}</h1>
+      <h1 className="mb-8 text-4xl font-bold text-text md:text-5xl">{title}</h1>
       <FaqAccordion items={items} />
     </div>
   )

@@ -63,11 +63,11 @@ export function ProductCarousel({ title, autoAdvance = true, children }: Product
   if (!itemCount) return null
 
   return (
-    <section className="mt-12" aria-roledescription="carousel" aria-label={title}>
-      <div className="mb-6 flex items-center justify-between gap-4">
-        <h2 className="text-2xl font-bold text-text">{title}</h2>
+    <section className="mt-20 md:mt-28" aria-roledescription="carousel" aria-label={title}>
+      <div className="mb-8 flex items-end justify-between gap-4">
+        <h2 className="text-3xl font-bold text-text md:text-4xl">{title}</h2>
         {hasOverflow && (
-          <div className="flex gap-2">
+          <div className="flex shrink-0 gap-2">
             <CarouselArrow direction={-1} label={t('carouselPrev')} onClick={scrollByPage} />
             <CarouselArrow direction={1} label={t('carouselNext')} onClick={scrollByPage} />
           </div>
@@ -104,15 +104,15 @@ function CarouselArrow({
       type="button"
       onClick={() => onClick(direction)}
       aria-label={label}
-      className="flex h-10 w-10 items-center justify-center rounded-full border border-cream-dark bg-white text-burgundy shadow-sm transition-all hover:border-burgundy hover:bg-burgundy hover:text-cream hover:shadow-md active:scale-95"
+      className="flex h-11 w-11 items-center justify-center rounded-full bg-paper text-burgundy shadow-soft ring-1 ring-line transition-all duration-500 ease-glide hover:bg-burgundy hover:text-cream hover:shadow-lift hover:ring-burgundy active:scale-95"
     >
       <svg
-        width="18"
-        height="18"
+        width="17"
+        height="17"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
-        strokeWidth="2.5"
+        strokeWidth="1.75"
         strokeLinecap="round"
         strokeLinejoin="round"
         aria-hidden

@@ -22,6 +22,7 @@
   },
   "shop": {
     "title": "Butik",
+    "offers": "Tilbud",
     "allCategories": "Alle kategorier",
     "searchPlaceholder": "Søg produkter...",
     "search": "Søg",

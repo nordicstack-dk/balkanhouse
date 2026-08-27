@@ -69,6 +69,12 @@ ehthumbs.db
 !.vscode/launch.json
 !.vscode/tasks.json
 
+# Claude Code — local only: vendored skills, worktrees, per-machine config.
+# Worktrees live under .claude/worktrees, so this must stay ignored.
+# If the team ever needs one file shared, un-ignore it explicitly, e.g.
+#   !/.claude/settings.json
+/.claude/
+
 # Misc
 *.pem
 *.swp

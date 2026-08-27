@@ -28,17 +28,28 @@ export function SearchBar() {
       onSubmit={handleSubmit}
       className="flex gap-2"
     >
-      <input
-        key={q}
-        type="search"
-        name="q"
-        defaultValue={q}
-        placeholder={t('searchPlaceholder')}
-        className="flex-1 rounded-lg border border-cream-dark bg-white px-4 py-2 text-sm text-text outline-none focus:border-burgundy focus:ring-1 focus:ring-burgundy"
-      />
+      <div className="relative flex-1">
+        <span
+          className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-text-muted/60"
+          aria-hidden
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round">
+            <circle cx="11" cy="11" r="7" />
+            <path d="M16.5 16.5 L21 21" />
+          </svg>
+        </span>
+        <input
+          key={q}
+          type="search"
+          name="q"
+          defaultValue={q}
+          placeholder={t('searchPlaceholder')}
+          className="w-full rounded-full bg-paper py-2.5 pl-11 pr-4 text-sm text-text shadow-soft ring-1 ring-line outline-none transition-shadow duration-300 ease-glide placeholder:text-text-muted/60 focus:ring-2 focus:ring-burgundy"
+        />
+      </div>
       <button
         type="submit"
-        className="rounded-lg bg-burgundy px-4 py-2 text-sm font-medium text-cream shadow-sm transition-all hover:bg-burgundy-dark hover:shadow-md active:scale-[0.98]"
+        className="shrink-0 rounded-full bg-burgundy px-6 py-2.5 text-sm font-semibold text-cream shadow-soft transition-all duration-500 ease-glide hover:bg-burgundy-dark hover:shadow-lift active:scale-[0.98]"
       >
         {t('search')}
       </button>

@@ -51,26 +51,42 @@ export default async function CheckoutConfirmationPage({ params, searchParams }:
   const isPaymentConfirmation = paymentVerified
 
   return (
-    <div className="mx-auto max-w-lg rounded-xl border border-cream-dark bg-white p-8 text-center">
-      <div className="mb-4 text-5xl text-success" aria-hidden>
-        ✓
+    <div className="rounded-shell mx-auto max-w-lg bg-paper p-10 text-center shadow-lift ring-1 ring-line/60">
+      {/* Drawn check in its own well — the ✓ glyph rendered at a different weight
+          and baseline in every font that happened to serve it. */}
+      <div
+        className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-success/12 text-success ring-1 ring-success/25"
+        aria-hidden
+      >
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M4 12.5l5 5L20 6.5" />
+        </svg>
       </div>
-      <h1 className="text-2xl font-bold text-text">
+      <h1 className="text-3xl font-bold text-text">
         {isPaymentConfirmation ? t('paymentConfirmedTitle') : t('confirmationTitle')}
       </h1>
-      <p className="mt-4 text-text-muted">
+      <p className="mx-auto mt-4 max-w-sm leading-relaxed text-text-muted">
         {isPaymentConfirmation ? t('paymentConfirmedMessage') : t('confirmationMessage')}
       </p>
       {orderNumber && (
-        <p className="mt-4 rounded-lg bg-cream px-4 py-3 font-mono text-sm text-text">
-          {t('orderNumber')}: <strong>{orderNumber}</strong>
+        <p className="rounded-core bh-nums mt-6 bg-cream px-4 py-3 text-sm text-text ring-1 ring-line">
+          <span className="text-text-muted">{t('orderNumber')}: </span>
+          <strong className="font-semibold tracking-wide">{orderNumber}</strong>
         </p>
       )}
       <Link
         href="/shop"
-        className="mt-8 inline-block rounded-lg bg-burgundy px-8 py-3 font-semibold text-cream transition hover:bg-burgundy-dark"
+        className="group mt-8 inline-flex items-center gap-3 rounded-full bg-burgundy py-2 pl-7 pr-2 font-semibold text-cream shadow-soft transition-all duration-500 ease-glide hover:bg-burgundy-dark hover:shadow-lift active:scale-[0.98]"
       >
         {t('backToShop')}
+        <span
+          className="flex h-9 w-9 items-center justify-center rounded-full bg-cream/15 transition-transform duration-500 ease-spring group-hover:translate-x-0.5 group-hover:scale-105"
+          aria-hidden
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M5 12h14M13 6l6 6-6 6" />
+          </svg>
+        </span>
       </Link>
     </div>
   )

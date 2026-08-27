@@ -3,33 +3,45 @@
 import { useTranslations } from 'next-intl'
 
 import { Link } from '@/i18n/navigation'
+import { LinkPending } from '@/components/ui/LinkPending'
+import { Spinner } from '@/components/ui/Spinner'
 
 export function Hero() {
   const t = useTranslations('home')
 
   return (
-    <section className="on-dark relative overflow-hidden rounded-2xl bg-gradient-to-br from-burgundy to-burgundy-dark px-6 py-16 text-cream md:px-12 md:py-24">
-      <div className="bh-pattern-lattice pointer-events-none absolute inset-0 opacity-[0.06]" aria-hidden />
-      <div className="relative z-10 max-w-xl">
-        <h1 className="text-3xl font-bold leading-tight md:text-5xl">{t('heroTitle')}</h1>
-        <p className="mt-4 text-lg text-cream/90 md:text-xl">{t('heroSubtitle')}</p>
-        <Link
-          href="/shop"
-          className="mt-8 inline-flex items-center gap-2 rounded-lg bg-gold px-8 py-3 font-semibold text-burgundy-dark shadow-md transition hover:-translate-y-0.5 hover:bg-gold-light hover:shadow-lg active:translate-y-0 active:scale-[0.98]"
-        >
-          {t('shopNow')}
-          <span aria-hidden>→</span>
-        </Link>
+    // Wood tray around the panel; inner radius is the outer minus the padding.
+    <section className="bh-rise rounded-shell bg-gradient-to-b from-wood-light/45 to-wood/25 p-1.5 shadow-deep">
+      <div className="on-dark rounded-core relative overflow-hidden bg-gradient-to-br from-burgundy via-burgundy-dark to-burgundy-deep px-6 py-14 text-cream inset-shadow-rim md:px-14 md:py-20">
+        <div className="bh-pattern-cloth pointer-events-none absolute inset-0 opacity-[0.07]" aria-hidden />
+
+        <div className="relative max-w-xl">
+          <h1 className="text-[2.5rem] font-bold leading-[1.04] tracking-[-0.02em] md:text-[3.5rem]">
+            {t('heroTitle')}
+          </h1>
+          <p className="mt-5 text-lg leading-relaxed text-cream/85">{t('heroSubtitle')}</p>
+
+          <Link
+            href="/shop"
+            className="group mt-9 inline-flex items-center gap-3 rounded-full bg-gold py-2.5 pl-8 pr-2.5 text-[1.0625rem] font-bold text-burgundy-deep shadow-lift transition-all duration-500 ease-glide hover:bg-gold-light hover:shadow-deep active:scale-[0.98]"
+          >
+            {t('shopNow')}
+            <span
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-burgundy-deep/25 transition-transform duration-500 ease-spring group-hover:translate-x-0.5 group-hover:scale-105"
+              aria-hidden
+            >
+              <LinkPending
+                idle={
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M5 12h14M13 6l6 6-6 6" />
+                  </svg>
+                }
+                pending={<Spinner className="h-4 w-4" />}
+              />
+            </span>
+          </Link>
+        </div>
       </div>
-      <div
-        className="pointer-events-none absolute -right-8 -top-8 h-48 w-48 rounded-full bg-wood/20 md:h-72 md:w-72"
-        aria-hidden
-      />
-      <div
-        className="pointer-events-none absolute -bottom-12 right-12 h-32 w-32 rounded-full bg-gold/10 md:h-48 md:w-48"
-        aria-hidden
-      />
-      <div className="bh-motif-gold absolute inset-x-0 bottom-3 opacity-70" aria-hidden />
     </section>
   )
 }

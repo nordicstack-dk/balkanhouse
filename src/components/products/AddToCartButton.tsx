@@ -32,7 +32,7 @@ export function AddToCartButton({ product, promoPercent }: AddToCartButtonProps)
       <button
         type="button"
         disabled
-        className="w-full cursor-not-allowed rounded-lg bg-cream-dark px-6 py-3 font-semibold text-text-muted"
+        className="w-full cursor-not-allowed rounded-full bg-paper-sunk px-7 py-3 font-semibold text-text-muted/70 ring-1 ring-line"
       >
         {t('outOfStock')}
       </button>
@@ -58,20 +58,25 @@ export function AddToCartButton({ product, promoPercent }: AddToCartButtonProps)
     <button
       type="button"
       onClick={handleClick}
-      className={`w-full rounded-lg px-6 py-3 font-semibold text-cream shadow-sm transition-all active:scale-[0.98] ${
-        added
-          ? 'bg-success'
-          : 'bg-burgundy hover:bg-burgundy-dark hover:shadow-md'
+      className={`group flex w-full items-center justify-center gap-3 rounded-full py-2 pl-7 pr-5 font-semibold text-cream shadow-soft transition-all duration-500 ease-glide hover:shadow-lift active:scale-[0.98] ${
+        added ? 'bg-success' : 'bg-burgundy hover:bg-burgundy-dark'
       }`}
     >
-      {added ? (
-        <span className="inline-flex items-center gap-2">
-          <span aria-hidden>✓</span>
-          {t('addedToCart')}
-        </span>
-      ) : (
-        t('addToCart')
-      )}
+      <span>{added ? t('addedToCart') : t('addToCart')}</span>
+      <span
+        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-cream/15 transition-transform duration-500 ease-spring group-hover:translate-x-0.5 group-hover:scale-105"
+        aria-hidden
+      >
+        {added ? (
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M4 12.5l5 5L20 6.5" />
+          </svg>
+        ) : (
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+        )}
+      </span>
       <span aria-live="polite" className="sr-only">
         {added ? t('addedToCart') : ''}
       </span>
@@ -84,7 +89,7 @@ export function ContinueShoppingLink() {
   return (
     <Link
       href="/shop"
-      className="text-burgundy underline transition-colors hover:text-burgundy-dark"
+      className="font-medium text-burgundy underline decoration-gold decoration-1 underline-offset-4 transition-colors duration-300 hover:text-burgundy-dark hover:decoration-burgundy"
     >
       {t('continueShopping')}
     </Link>

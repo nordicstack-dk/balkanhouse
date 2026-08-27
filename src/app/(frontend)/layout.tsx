@@ -24,7 +24,11 @@ export const metadata: Metadata = {
 export default function FrontendRootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html className={`${sourceSans.variable} ${playfair.variable}`}>
-      <body className="min-h-screen bg-cream font-sans text-text antialiased">{children}</body>
+      <body className="min-h-dvh bg-cream font-sans text-text antialiased">
+        {children}
+        {/* Fixed paper grain over the whole storefront — see .bh-grain */}
+        <div className="bh-grain" aria-hidden />
+      </body>
     </html>
   )
 }

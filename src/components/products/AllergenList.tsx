@@ -13,7 +13,7 @@ export function AllergenList({ allergens }: { allergens: AllergenEU[] }) {
       {allergens.map((a) => (
         <li
           key={a}
-          className="rounded-md border border-wood-light/40 bg-cream-dark/50 px-2.5 py-1 text-sm text-text"
+          className="rounded-tag bg-cream px-2.5 py-1 text-sm text-text ring-1 ring-line"
           title={allergenLabels[a]}
         >
           {allergenLabels[a]}

@@ -12,9 +12,10 @@ import { applyPromo, formatPriceDkk } from '@/lib/pricing'
 import { cartSubtotal } from '@/lib/cart'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { Spinner } from '@/components/ui/Spinner'
+import { WovenMark } from '@/components/ui/WovenMark'
 
 const inputClassName =
-  'w-full rounded-lg border border-cream-dark px-3 py-2 text-text focus:border-burgundy focus:outline-none focus:ring-1 focus:ring-burgundy'
+  'w-full rounded-core bg-paper px-3.5 py-2.5 text-text shadow-soft ring-1 ring-line outline-none transition-shadow duration-300 ease-glide placeholder:text-text-muted/55 focus:ring-2 focus:ring-burgundy'
 
 export function CheckoutForm() {
   const t = useTranslations('checkout')
@@ -39,7 +40,7 @@ export function CheckoutForm() {
   if (!hydrated) {
     return (
       <div aria-busy="true" className="grid gap-8 lg:grid-cols-2">
-        <div className="space-y-4 rounded-xl border border-cream-dark bg-white p-6">
+        <div className="space-y-4 rounded-core bg-paper ring-1 ring-line/60 p-6">
           <Skeleton className="h-6 w-40" />
           <div className="grid gap-4 sm:grid-cols-2">
             <Skeleton className="h-10 w-full" />
@@ -48,7 +49,7 @@ export function CheckoutForm() {
           <Skeleton className="h-10 w-full" />
           <Skeleton className="h-12 w-full" />
         </div>
-        <div className="space-y-4 rounded-xl border border-cream-dark bg-white p-6">
+        <div className="space-y-4 rounded-core bg-paper ring-1 ring-line/60 p-6">
           <Skeleton className="h-6 w-40" />
           <Skeleton className="h-4 w-full" />
           <Skeleton className="h-6 w-full" />
@@ -63,7 +64,7 @@ export function CheckoutForm() {
   if (redirecting) {
     return (
       <div
-        className="flex items-center justify-center rounded-xl border border-cream-dark bg-white p-12"
+        className="flex items-center justify-center rounded-core bg-paper ring-1 ring-line/60 p-12"
         aria-busy="true"
       >
         <Spinner className="h-8 w-8" />
@@ -73,7 +74,7 @@ export function CheckoutForm() {
 
   if (!items.length) {
     return (
-      <div className="rounded-xl border border-cream-dark bg-white p-8 text-center">
+      <div className="rounded-core bg-paper ring-1 ring-line/60 p-8 text-center">
         <p className="text-lg text-text-muted">{t('emptyCart')}</p>
         <Link
           href="/cos"
@@ -135,7 +136,7 @@ export function CheckoutForm() {
 
   return (
     <form onSubmit={handleSubmit} className="grid gap-8 lg:grid-cols-2">
-      <div className="space-y-4 rounded-xl border border-cream-dark bg-white p-6">
+      <div className="space-y-4 rounded-core bg-paper ring-1 ring-line/60 p-6">
         <h2 className="text-lg font-semibold text-text">{t('contactDetails')}</h2>
 
         <div className="grid gap-4 sm:grid-cols-2">
@@ -210,7 +211,7 @@ export function CheckoutForm() {
               className={`flex cursor-pointer items-start gap-3 rounded-lg border px-4 py-3 transition ${
                 shippingMethod === SHIPPING_METHOD.PICKUP
                   ? 'border-burgundy bg-burgundy/5 ring-1 ring-burgundy'
-                  : 'border-cream-dark hover:border-burgundy/40'
+                  : 'border-line hover:border-burgundy/40'
               }`}
             >
               <input
@@ -230,7 +231,7 @@ export function CheckoutForm() {
               className={`flex cursor-pointer items-start gap-3 rounded-lg border px-4 py-3 transition ${
                 shippingMethod === SHIPPING_METHOD.DELIVERY
                   ? 'border-burgundy bg-burgundy/5 ring-1 ring-burgundy'
-                  : 'border-cream-dark hover:border-burgundy/40'
+                  : 'border-line hover:border-burgundy/40'
               }`}
             >
               <input
@@ -252,7 +253,7 @@ export function CheckoutForm() {
         </fieldset>
 
         {shippingMethod === SHIPPING_METHOD.DELIVERY && (
-          <div className="space-y-4 rounded-lg border border-cream-dark bg-cream/30 p-4">
+          <div className="rounded-core space-y-4 bg-cream/50 p-4 ring-1 ring-line/70">
             <h3 className="text-sm font-semibold text-text">{t('deliveryAddress')}</h3>
             <div>
               <label htmlFor="street" className="mb-1 block text-sm font-medium text-text">
@@ -359,7 +360,7 @@ export function CheckoutForm() {
         </fieldset>
 
         {error && (
-          <p className="rounded-lg bg-danger/10 px-3 py-2 text-sm text-danger" role="alert">
+          <p className="rounded-core border-l-2 border-danger bg-danger/8 px-4 py-2.5 text-sm font-medium text-danger" role="alert">
             {error}
           </p>
         )}
@@ -367,21 +368,21 @@ export function CheckoutForm() {
         <button
           type="submit"
           disabled={submitting || !privacyConsent}
-          className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-burgundy py-3 font-semibold text-cream shadow-sm transition-all hover:bg-burgundy-dark hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:shadow-sm disabled:active:scale-100"
+          className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-burgundy py-3.5 font-semibold text-cream shadow-soft transition-all duration-500 ease-glide hover:bg-burgundy-dark hover:shadow-lift active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:shadow-soft disabled:active:scale-100"
         >
           {submitting && <Spinner className="h-4 w-4" />}
           {submitting ? t('submitting') : t('submitOrder')}
         </button>
       </div>
 
-      <div className="rounded-xl border border-cream-dark bg-white p-6">
+      <div className="rounded-core bg-paper ring-1 ring-line/60 p-6">
         <h2 className="mb-4 text-lg font-semibold text-text">{t('orderSummary')}</h2>
-        <ul className="divide-y divide-cream-dark">
+        <ul className="divide-y divide-line/70">
           {items.map((item) => {
             const unitPrice = applyPromo(item.priceDkk, item.promoPercent)
             return (
               <li key={item.productId} className="flex items-center gap-3 py-3 text-sm">
-                <span className="relative block h-10 w-10 shrink-0 overflow-hidden rounded-md border border-cream-dark bg-cream-dark/30">
+                <span className="rounded-tag relative block h-10 w-10 shrink-0 overflow-hidden bg-paper-sunk ring-1 ring-line">
                   {item.imageUrl ? (
                     <Image
                       src={item.imageUrl}
@@ -391,27 +392,24 @@ export function CheckoutForm() {
                       className="object-cover"
                     />
                   ) : (
-                    <span
-                      className="flex h-full items-center justify-center text-sm text-wood-light"
-                      aria-hidden
-                    >
-                      🏠
+                    <span className="flex h-full items-center justify-center text-wood-light" aria-hidden>
+                      <WovenMark size={20} />
                     </span>
                   )}
                 </span>
                 <span className="min-w-0 flex-1 text-text">
                   {item.title} × {item.quantity}
                 </span>
-                <span className="shrink-0 font-medium text-burgundy">
+                <span className="bh-nums shrink-0 font-medium text-burgundy">
                   {formatPriceDkk(unitPrice * item.quantity)}
                 </span>
               </li>
             )
           })}
         </ul>
-        <div className="mt-4 flex justify-between border-t border-cream-dark pt-4 text-lg font-bold">
+        <div className="mt-4 flex justify-between border-t border-line pt-4 text-lg font-bold">
           <span>{t('subtotal')}</span>
-          <span className="text-burgundy">{formatPriceDkk(subtotal)}</span>
+          <span className="bh-nums tracking-tight text-burgundy">{formatPriceDkk(subtotal)}</span>
         </div>
         <p className="mt-2 text-sm text-text-muted">{t('paymentLater')}</p>
       </div>

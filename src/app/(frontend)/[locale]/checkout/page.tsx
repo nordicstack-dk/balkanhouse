@@ -15,7 +15,7 @@ export default async function CheckoutPage({ params }: Props) {
 
   return (
     <div>
-      <h1 className="mb-6 text-3xl font-bold text-text">{t('title')}</h1>
+      <h1 className="mb-8 text-4xl font-bold text-text md:text-5xl">{t('title')}</h1>
       <CheckoutForm />
     </div>
   )

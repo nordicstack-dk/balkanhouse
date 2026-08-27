@@ -12,15 +12,16 @@ export function CartButton() {
   return (
     <Link
       href="/cos"
-      className="relative inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium text-cream transition-colors hover:bg-burgundy-dark/50 active:bg-burgundy-dark/70"
+      className="group relative inline-flex items-center gap-2 rounded-full bg-burgundy-deep/35 px-4 py-2 text-sm font-semibold text-cream ring-1 ring-cream/10 transition-all duration-500 ease-glide hover:bg-burgundy-deep/60 hover:ring-gold/40 active:scale-[0.97]"
     >
       <svg
         width="18"
         height="18"
         viewBox="0 0 24 24"
+        className="transition-transform duration-500 ease-spring group-hover:-translate-y-px"
         fill="none"
         stroke="currentColor"
-        strokeWidth="2"
+        strokeWidth="1.6"
         strokeLinecap="round"
         strokeLinejoin="round"
         aria-hidden
@@ -33,7 +34,7 @@ export function CartButton() {
       {itemCount > 0 && (
         <span
           key={itemCount}
-          className="bh-badge-pop absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-gold px-1 text-xs font-bold text-burgundy-dark"
+          className="bh-badge-pop bh-nums absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-gold px-1 text-xs font-bold text-burgundy-deep shadow-soft ring-2 ring-burgundy"
         >
           {itemCount}
         </span>

@@ -210,6 +210,10 @@ export interface Category {
    * URL segment, e.g. 'conserve' becomes /shop/conserve (translate per language).
    */
   slug: string;
+  /**
+   * Tile image for "Popular categories" on the home page. A wide crop reads best — about 1600×640. Leave empty to fall back to a plain woven panel.
+   */
+  image?: (number | null) | Media;
   updatedAt: string;
   createdAt: string;
 }
@@ -642,6 +646,7 @@ export interface MediaSelect<T extends boolean = true> {
 export interface CategoriesSelect<T extends boolean = true> {
   name?: T;
   slug?: T;
+  image?: T;
   updatedAt?: T;
   createdAt?: T;
 }

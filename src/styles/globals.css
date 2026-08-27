@@ -3,21 +3,59 @@
 
 @source "../**/*.{ts,tsx}";
 
-/* Reserve scrollbar space on every page so centered content doesn't
-   shift horizontally between long (scrollable) and short pages. */
-html {
-  scrollbar-gutter: stable;
+/*
+ * Element defaults live in @layer base so Tailwind utilities can override them.
+ * Un-layered, these would beat every utility class — a heading could never opt
+ * out of the display face with `font-sans`.
+ */
+@layer base {
+  /* Reserve scrollbar space on every page so centered content doesn't shift
+     horizontally between long (scrollable) and short pages. */
+  html {
+    scrollbar-gutter: stable;
+    scroll-behavior: smooth;
+    /* Lets `height: 0 -> auto` tween instead of snapping, which is what the FAQ
+       panel animates against. Ignored where unsupported — the panel still
+       opens, just instantly. */
+    interpolate-size: allow-keywords;
+  }
+
+  body {
+    font-family: var(--font-source-sans, var(--font-sans));
+  }
+
+  /* Playfair is high-contrast, so it carries tighter tracking and shorter
+     leading at display sizes; `balance` keeps single words off the last line. */
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-playfair, Georgia, serif);
+    letter-spacing: -0.015em;
+    text-wrap: balance;
+  }
+
+  h1 {
+    line-height: 1.05;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
 }
 
-body {
-  font-family: var(--font-source-sans, var(--font-sans));
+/* Prices and quantities align in columns instead of dancing between rows. */
+.bh-nums {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
 }
 
-/* Traditional display face for the main headings (Playfair Display, loaded via next/font) */
-h1,
-h2 {
-  font-family: var(--font-playfair, Georgia, serif);
-  letter-spacing: -0.01em;
+/* Small label text: positive tracking, the counterpart to the negative
+   tracking on display headings. */
+.bh-label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
 }
 
 /* Visible keyboard focus everywhere; gold ring on dark (burgundy/forest) surfaces */
@@ -31,29 +69,69 @@ h2 {
 }
 
 /*
- * Romanian folk-embroidery motif bands — a repeating cross-stitch diamond row,
- * inspired by traditional "ie" patterns. Used as decorative trims on
- * header/footer/hero. Gold variant for dark surfaces, burgundy for cream.
+ * Paper grain — a fixed, non-interactive overlay that breaks the digital
+ * flatness of large cream areas and reads as the woven/printed surface of a
+ * market stall label. Fixed and pointer-events-none so it composites once and
+ * never repaints during scroll.
  */
-.bh-motif-gold,
-.bh-motif-burgundy {
+.bh-grain {
+  position: fixed;
+  inset: 0;
+  z-index: var(--bh-z-grain);
+  pointer-events: none;
+  opacity: 0.05;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Cross-stitch diamond row from traditional "ie" embroidery. One instance, as
+   the footer's top trim. */
+.bh-motif-gold {
   height: 10px;
   background-repeat: repeat-x;
   background-size: auto 100%;
-}
-
-.bh-motif-gold {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='12' viewBox='0 0 24 12'%3E%3Cpath d='M12 1.5 L21 6 L12 10.5 L3 6 Z' fill='none' stroke='%23c9a227' stroke-width='1.4'/%3E%3Ccircle cx='12' cy='6' r='1.1' fill='%23c9a227'/%3E%3C/svg%3E");
 }
 
-.bh-motif-burgundy {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='12' viewBox='0 0 24 12'%3E%3Cpath d='M12 1.5 L21 6 L12 10.5 L3 6 Z' fill='none' stroke='%236b1d2a' stroke-width='1.4'/%3E%3Ccircle cx='12' cy='6' r='1.1' fill='%236b1d2a'/%3E%3C/svg%3E");
+/*
+ * Woven cloth pattern — a denser, offset cross-stitch field for the hero. Reads
+ * as embroidered fabric rather than a geometric grid.
+ */
+.bh-pattern-cloth {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3Cg fill='none' stroke='%23f7f0e6' stroke-width='1.1'%3E%3Cpath d='M16 4 L28 16 L16 28 L4 16 Z'/%3E%3Cpath d='M48 36 L60 48 L48 60 L36 48 Z'/%3E%3Cpath d='M16 16 L48 48 M48 16 L16 48'/%3E%3C/g%3E%3Cg fill='%23f7f0e6'%3E%3Ccircle cx='16' cy='16' r='1.6'/%3E%3Ccircle cx='48' cy='48' r='1.6'/%3E%3C/g%3E%3C/svg%3E");
+  background-size: 64px 64px;
 }
 
-/* Large diamond lattice used as a faint texture overlay on the hero */
-.bh-pattern-lattice {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 48 48'%3E%3Cpath d='M24 0 L48 24 L24 48 L0 24 Z' fill='none' stroke='%23f7f0e6' stroke-width='1'/%3E%3Ccircle cx='24' cy='24' r='2' fill='none' stroke='%23f7f0e6' stroke-width='1'/%3E%3C/svg%3E");
-  background-size: 48px 48px;
+/*
+ * Scroll-entry reveal. Where scroll-driven timelines are supported each element
+ * animates on its own way into the viewport, which staggers naturally by
+ * position. Everywhere else it falls back to a load-time cascade, with the
+ * index passed in as `--bh-i` for the delay.
+ *
+ * Animates only transform/opacity, so it never triggers layout.
+ */
+@keyframes bh-rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 1.75rem, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.bh-rise {
+  animation: bh-rise 0.7s var(--ease-out-quint) both;
+  animation-delay: calc(var(--bh-i, 0) * 70ms);
+}
+
+@supports (animation-timeline: view()) {
+  .bh-rise {
+    animation-timeline: view();
+    animation-range: entry 0% cover 24%;
+    animation-delay: 0s;
+  }
 }
 
 /*
@@ -64,6 +142,7 @@ h2 {
 .bh-richtext {
   color: var(--color-text-muted, #555);
   line-height: 1.7;
+  max-width: 68ch;
 }
 
 .bh-richtext > * + * {
@@ -105,6 +184,13 @@ h2 {
   color: var(--bh-burgundy, #6b1d2a);
   text-decoration: underline;
   text-underline-offset: 2px;
+  text-decoration-thickness: 1px;
+  text-decoration-color: var(--bh-gold, #c9a227);
+  transition: text-decoration-color 0.2s var(--ease-glide);
+}
+
+.bh-richtext a:hover {
+  text-decoration-color: var(--bh-burgundy, #6b1d2a);
 }
 
 .bh-richtext strong {
@@ -140,6 +226,98 @@ h2 {
   border-top: 1px solid var(--color-cream-dark, #e6dcc8);
 }
 
+/*
+ * Loading placeholders sweep rather than pulse: a pulse reads as "broken", a
+ * sweep reads as "arriving". The sweep is a transform on a pseudo-element, so
+ * it stays off the layout path.
+ */
+@keyframes bh-sweep {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+.bh-skeleton {
+  position: relative;
+  overflow: hidden;
+  background-color: color-mix(in oklab, var(--bh-cream-dark) 55%, transparent);
+}
+
+.bh-skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.5), transparent);
+  animation: bh-sweep 1.6s var(--ease-glide) infinite;
+}
+
+/* Indeterminate sweep marking the link whose navigation is in flight. Reuses
+   the skeleton's bh-sweep keyframes. */
+.bh-link-sweep {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 2px;
+  overflow: hidden;
+  background-color: rgb(201 162 39 / 0.2);
+}
+
+.bh-link-sweep::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(
+    90deg,
+    transparent,
+    var(--bh-gold) 45%,
+    var(--bh-gold) 55%,
+    transparent
+  );
+  animation: bh-sweep 0.9s var(--ease-glide) infinite;
+}
+
+/*
+ * Global navigation progress bar. Width is driven by a long, heavily eased
+ * scale animation rather than JS ticks, so it creeps convincingly without a
+ * timer: fast to ~40%, then progressively slower, never reaching the end on its
+ * own. Completion snaps it to full and fades it out.
+ */
+@keyframes bh-nav-creep {
+  from {
+    transform: scaleX(0.015);
+  }
+  to {
+    transform: scaleX(0.92);
+  }
+}
+
+.bh-nav-progress {
+  position: fixed;
+  inset-inline: 0;
+  top: 0;
+  z-index: var(--bh-z-overlay);
+  height: 3px;
+  transform-origin: left center;
+  background-image: linear-gradient(90deg, var(--bh-burgundy), var(--bh-gold));
+  box-shadow: 0 0 8px rgb(201 162 39 / 0.5);
+  pointer-events: none;
+}
+
+.bh-nav-progress[data-state='loading'] {
+  animation: bh-nav-creep 14s cubic-bezier(0.1, 0.9, 0.2, 1) forwards;
+}
+
+.bh-nav-progress[data-state='done'] {
+  transform: scaleX(1);
+  opacity: 0;
+  transition:
+    transform 0.16s var(--ease-glide),
+    opacity 0.32s var(--ease-glide) 0.14s;
+}
+
 /* Pop-in for the cart badge when the count changes */
 @keyframes bh-pop {
   0% {
@@ -154,14 +332,40 @@ h2 {
 }
 
 .bh-badge-pop {
-  animation: bh-pop 0.3s ease-out;
+  animation: bh-pop 0.3s var(--ease-spring);
 }
 
 @media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
   *,
   ::before,
   ::after {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
+  }
+
+  .bh-rise {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  .bh-skeleton::after {
+    animation: none;
+  }
+
+  /* Both indicators stay visible but stop moving: the global guard's 0.01ms
+     duration would otherwise flicker the sweep and snap the bar to its end. */
+  .bh-link-sweep::after {
+    animation: none;
+    opacity: 0.9;
+  }
+
+  .bh-nav-progress[data-state='loading'] {
+    animation: none;
+    transform: scaleX(0.4);
   }
 }

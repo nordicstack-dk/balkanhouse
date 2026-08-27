@@ -22,6 +22,7 @@
   },
   "shop": {
     "title": "Magazin",
+    "offers": "Oferte speciale",
     "allCategories": "Toate categoriile",
     "searchPlaceholder": "Caută produse...",
     "search": "Caută",

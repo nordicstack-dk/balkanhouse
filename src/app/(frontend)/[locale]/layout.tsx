@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { NextIntlClientProvider } from 'next-intl'
 import { getMessages, getTranslations, setRequestLocale } from 'next-intl/server'
 import { hasLocale } from 'next-intl'
@@ -5,6 +6,7 @@ import { notFound } from 'next/navigation'
 
 import { Footer } from '@/components/layout/Footer'
 import { Header } from '@/components/layout/Header'
+import { NavigationProgress } from '@/components/layout/NavigationProgress'
 import { CartProvider } from '@/components/cart/CartProvider'
 import { routing, type Locale } from '@/i18n/routing'
 import { getSiteSettings } from '@/lib/storefront'
@@ -41,9 +43,14 @@ export default async function LocaleLayout({ children, params }: Props) {
   return (
     <NextIntlClientProvider messages={messages}>
       <CartProvider>
-        <div className="flex min-h-screen flex-col">
+        <div className="flex min-h-dvh flex-col">
+          {/* Suspense because it reads useSearchParams, same as the header's
+              language switcher. */}
+          <Suspense fallback={null}>
+            <NavigationProgress />
+          </Suspense>
           <Header />
-          <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">{children}</main>
+          <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-10 md:py-16">{children}</main>
           <Footer supportEmail={settings.email} supportPhone={settings.phone} />
         </div>
       </CartProvider>

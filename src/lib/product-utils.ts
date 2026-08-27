@@ -1,4 +1,4 @@
-import type { Media, Product } from '@/payload-types'
+import type { Category, Media, Product } from '@/payload-types'
 
 type ProductWithImages = Product & {
   images?: (number | Media)[] | null
@@ -56,4 +56,15 @@ export function getProductImageAlt(product: ProductWithImages): string {
   const first = product.images?.[0]
   if (first && typeof first !== 'number' && first.alt) return first.alt
   return product.title || ''
+}
+
+/**
+ * Tile image for a category, resolved through the same blob/proxy rules as
+ * product photos. Returns null when the category has no image yet, which the
+ * home page renders as a plain woven panel.
+ */
+export function getCategoryImageUrl(category: Category): string | null {
+  const image = category.image
+  if (!image || typeof image === 'number') return null
+  return getMediaImageUrl(image)
 }

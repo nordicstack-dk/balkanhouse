@@ -23,7 +23,7 @@ export default async function AboutPage({ params }: Props) {
 
   return (
     <article className="max-w-3xl">
-      <h1 className="text-3xl font-bold text-text">{title}</h1>
+      <h1 className="mb-8 text-4xl font-bold text-text md:text-5xl">{title}</h1>
       {hasBody ? (
         <RichTextContent data={content.content} className="mt-6" />
       ) : (

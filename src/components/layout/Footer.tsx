@@ -17,63 +17,68 @@ export function Footer({ supportEmail, supportPhone }: FooterProps) {
   const email = supportEmail?.trim() || tContact('emailValue')
   const phone = supportPhone?.trim() || tContact('phoneValue')
 
+  const navLinks = [
+    { href: '/shop' as const, label: tNav('shop') },
+    { href: '/despre' as const, label: tNav('about') },
+    { href: '/faq' as const, label: tNav('faq') },
+    { href: '/contact' as const, label: tNav('contact') },
+  ]
+
   return (
-    <footer className="on-dark mt-auto bg-forest text-cream">
-      <div className="bh-motif-gold opacity-80" aria-hidden />
-      <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 md:grid-cols-3">
+    /* `mt-auto` keeps the footer pinned to the bottom on short pages — the
+       breathing room above it comes from the main element's padding. */
+    <footer className="on-dark mt-auto bg-gradient-to-b from-forest to-forest-deep text-cream">
+      <div className="bh-motif-gold opacity-70" aria-hidden />
+      <div className="mx-auto grid max-w-6xl gap-10 px-4 py-14 md:grid-cols-3 md:gap-8">
         <div>
           <p
-            className="text-lg font-bold"
+            className="text-xl font-bold tracking-[-0.01em]"
             style={{ fontFamily: 'var(--font-playfair, Georgia, serif)' }}
           >
             Balkan House
           </p>
-          <p className="mt-2 text-sm text-cream/80">{t('tagline')}</p>
+          <p className="mt-3 max-w-xs text-sm leading-relaxed text-cream/75">{t('tagline')}</p>
         </div>
         <div>
-          <p className="mb-3 font-semibold">{t('links')}</p>
-          <ul className="space-y-2 text-sm">
-            <li>
-              <Link href="/shop" className="transition-colors hover:text-gold hover:underline">
-                {tNav('shop')}
-              </Link>
-            </li>
-            <li>
-              <Link href="/despre" className="transition-colors hover:text-gold hover:underline">
-                {tNav('about')}
-              </Link>
-            </li>
-            <li>
-              <Link href="/faq" className="transition-colors hover:text-gold hover:underline">
-                {tNav('faq')}
-              </Link>
-            </li>
-            <li>
-              <Link href="/contact" className="transition-colors hover:text-gold hover:underline">
-                {tNav('contact')}
-              </Link>
-            </li>
+          <p className="bh-label mb-4 text-gold/85">{t('links')}</p>
+          <ul className="space-y-2.5 text-sm">
+            {navLinks.map((link) => (
+              <li key={link.href}>
+                <Link
+                  href={link.href}
+                  className="text-cream/85 underline decoration-transparent decoration-1 underline-offset-4 transition-all duration-300 ease-glide hover:text-gold hover:decoration-gold"
+                >
+                  {link.label}
+                </Link>
+              </li>
+            ))}
           </ul>
         </div>
         <div>
-          <p className="mb-3 font-semibold">{t('support')}</p>
-          <ul className="space-y-2 text-sm">
+          <p className="bh-label mb-4 text-gold/85">{t('support')}</p>
+          <ul className="space-y-2.5 text-sm">
             <li>
-              <span className="text-cream/70">{tContact('email')}: </span>
-              <a href={`mailto:${email}`} className="transition-colors hover:text-gold hover:underline">
+              <span className="text-cream/60">{tContact('email')}: </span>
+              <a
+                href={`mailto:${email}`}
+                className="text-cream/85 underline decoration-transparent decoration-1 underline-offset-4 transition-all duration-300 ease-glide hover:text-gold hover:decoration-gold"
+              >
                 {email}
               </a>
             </li>
             <li>
-              <span className="text-cream/70">{tContact('phone')}: </span>
-              <a href={`tel:${phone.replace(/\s/g, '')}`} className="transition-colors hover:text-gold hover:underline">
+              <span className="text-cream/60">{tContact('phone')}: </span>
+              <a
+                href={`tel:${phone.replace(/\s/g, '')}`}
+                className="bh-nums text-cream/85 underline decoration-transparent decoration-1 underline-offset-4 transition-all duration-300 ease-glide hover:text-gold hover:decoration-gold"
+              >
                 {phone}
               </a>
             </li>
           </ul>
         </div>
       </div>
-      <div className="border-t border-cream/10 py-4 text-center text-xs text-cream/60">
+      <div className="border-t border-cream/10 py-5 text-center text-xs tracking-wide text-cream/55">
         © {new Date().getFullYear()} Balkan House
       </div>
     </footer>

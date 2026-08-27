@@ -11,13 +11,13 @@ export function Spinner({ className = 'h-5 w-5' }: { className?: string }) {
         cy="12"
         r="10"
         stroke="currentColor"
-        strokeWidth="4"
+        strokeWidth="2"
         className="opacity-25"
       />
       <path
         d="M12 2a10 10 0 0 1 10 10"
         stroke="currentColor"
-        strokeWidth="4"
+        strokeWidth="2"
         strokeLinecap="round"
       />
     </svg>

@@ -9,6 +9,7 @@ import { ProductCarousel } from '@/components/products/ProductCarousel'
 import { PromoBadge } from '@/components/products/PromoBadge'
 import { StockBadge } from '@/components/products/StockBadge'
 import { RichText } from '@/components/ui/RichText'
+import { WovenMark } from '@/components/ui/WovenMark'
 import { assertLocale } from '@/i18n/locale-guard'
 import type { AllergenEU } from '@/lib/contracts'
 import { applyPromo, decodeProductSlug, formatPriceDkk } from '@/lib/pricing'
@@ -56,29 +57,33 @@ export default async function ProductPage({ params }: Props) {
   const imageUrl = getProductImageUrl(product)
 
   return (
-    <div className="space-y-12">
-      <div className="grid gap-8 md:grid-cols-2">
-        <div className="relative aspect-square overflow-hidden rounded-xl border border-cream-dark bg-cream-dark/30">
-          {imageUrl ? (
-            <Image
-              src={imageUrl}
-              alt={getProductImageAlt(product)}
-              fill
-              className="object-cover"
-              sizes="(max-width: 768px) 100vw, 576px"
-              priority
-            />
-          ) : (
-            <div className="flex h-full items-center justify-center text-6xl text-wood-light">
-              🏠
-            </div>
-          )}
+    <div className="space-y-16">
+      <div className="grid gap-8 md:grid-cols-2 md:gap-12">
+        {/* Double bezel: the photo sits in a wood-toned tray, framed like goods
+            on a market counter rather than floating on the page. */}
+        <div className="rounded-shell bg-gradient-to-b from-wood-light/40 to-wood/20 p-1.5 shadow-lift">
+          <div className="rounded-core relative aspect-square overflow-hidden bg-paper-sunk">
+            {imageUrl ? (
+              <Image
+                src={imageUrl}
+                alt={getProductImageAlt(product)}
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, 576px"
+                priority
+              />
+            ) : (
+              <div className="flex h-full items-center justify-center text-wood-light" aria-hidden>
+                <WovenMark size={96} />
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="space-y-6">
           <div>
-            <h1 className="text-3xl font-bold text-text">{product.title}</h1>
-            <div className="mt-3 flex flex-wrap items-center gap-3">
+            <h1 className="text-4xl font-bold text-text md:text-5xl">{product.title}</h1>
+            <div className="mt-4 flex flex-wrap items-center gap-3">
               <StockBadge status={product.stockStatus} />
               {promoPercent != null && promoPercent > 0 && (
                 <PromoBadge percent={promoPercent} />
@@ -86,16 +91,16 @@ export default async function ProductPage({ params }: Props) {
             </div>
           </div>
 
-          <div>
+          <div className="flex flex-wrap items-baseline gap-x-2.5">
             {promoPercent != null && promoPercent > 0 && (
-              <span className="mr-2 text-lg text-text-muted line-through">
+              <span className="bh-nums text-lg text-text-muted/80 line-through decoration-danger/50">
                 {formatPriceDkk(product.priceDkk)}
               </span>
             )}
-            <span className="text-2xl font-bold text-burgundy">
+            <span className="bh-nums text-3xl font-bold tracking-tight text-burgundy md:text-4xl">
               {formatPriceDkk(finalPrice)}
             </span>
-            <span className="ml-2 text-sm text-text-muted">/ {tUnit(product.unit)}</span>
+            <span className="text-sm text-text-muted">/ {tUnit(product.unit)}</span>
           </div>
 
           <AddToCartButton product={product} promoPercent={promoPercent} />
@@ -108,21 +113,21 @@ export default async function ProductPage({ params }: Props) {
 
           {product.ingredients && (
             <section>
-              <h2 className="mb-2 font-semibold text-text">{t('ingredients')}</h2>
+              <h2 className="mb-2.5 font-sans text-base font-semibold tracking-normal text-text">{t('ingredients')}</h2>
               <p className="text-text-muted">{product.ingredients}</p>
             </section>
           )}
 
           {product.allergens && product.allergens.length > 0 && (
             <section>
-              <h2 className="mb-2 font-semibold text-text">{t('allergens')}</h2>
+              <h2 className="mb-2.5 font-sans text-base font-semibold tracking-normal text-text">{t('allergens')}</h2>
               <AllergenList allergens={product.allergens as AllergenEU[]} />
             </section>
           )}
 
           {product.description && (
             <section>
-              <h2 className="mb-2 font-semibold text-text">{t('description')}</h2>
+              <h2 className="mb-2.5 font-sans text-base font-semibold tracking-normal text-text">{t('description')}</h2>
               <RichText content={product.description} />
             </section>
           )}

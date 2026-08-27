@@ -1,5 +1,13 @@
 import type { Product, Promotion } from '@/payload-types'
 
+/**
+ * Shop segment for the discounts listing. It is a static route, so it shadows
+ * `/shop/[categorySlug]` — a CMS category given this slug would be unreachable.
+ * Not localised: the project's paths are fixed segments across locales
+ * (`/shop`, `/produs`, `/cos`).
+ */
+export const OFFERS_SLUG = 'oferte'
+
 export function getPromoPercentForProduct(
   productId: number,
   promotions: Promotion[],
