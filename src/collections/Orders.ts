@@ -40,6 +40,9 @@ export const Orders: CollectionConfig = {
     listSearchableFields: ['orderNumber', 'customerEmail', 'customerLastName'],
     group: 'Sales',
     description: 'Customer orders. Confirm new orders, send the payment link, then mark as shipped.',
+    components: {
+      beforeListTable: ['@/components/admin/OrdersAttention#OrdersAttentionBanner'],
+    },
   },
   endpoints: [
     {

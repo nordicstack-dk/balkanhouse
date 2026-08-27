@@ -53,6 +53,9 @@ export default buildConfig({
     meta: {
       titleSuffix: ' — Balkan House',
     },
+    components: {
+      beforeDashboard: ['@/components/admin/OrdersAttention#OrdersAttentionPanel'],
+    },
     importMap: {
       baseDir: path.resolve(dirname),
     },

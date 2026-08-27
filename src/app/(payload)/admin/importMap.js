@@ -30,6 +30,8 @@ import { SendPaymentLinkButton as SendPaymentLinkButton_62e18418a377d8fd7a0464bc
 import { CancelPaymentLinkButton as CancelPaymentLinkButton_64983a719fbb25683c12823a89438853 } from '@/components/admin/CancelPaymentLinkButton'
 import { CancelPaidOrderButton as CancelPaidOrderButton_72d10cd811eb879c968eef47c80cf473 } from '@/components/admin/CancelPaidOrderButton'
 import { OrderEmailActivity as OrderEmailActivity_dc48fdf40502d886d482d8b4403fc894 } from '@/components/admin/OrderEmailActivity'
+import { OrdersAttentionBanner as OrdersAttentionBanner_990ba4227ab49bc0df57e66dc5573888 } from '@/components/admin/OrdersAttention'
+import { OrdersAttentionPanel as OrdersAttentionPanel_990ba4227ab49bc0df57e66dc5573888 } from '@/components/admin/OrdersAttention'
 import { VercelBlobClientUploadHandler as VercelBlobClientUploadHandler_16c82c5e25f430251a3e3ba57219ff4e } from '@payloadcms/storage-vercel-blob/client'
 import { CollectionCards as CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1 } from '@payloadcms/next/rsc'
 
@@ -67,6 +69,8 @@ export const importMap = {
   "@/components/admin/CancelPaymentLinkButton#CancelPaymentLinkButton": CancelPaymentLinkButton_64983a719fbb25683c12823a89438853,
   "@/components/admin/CancelPaidOrderButton#CancelPaidOrderButton": CancelPaidOrderButton_72d10cd811eb879c968eef47c80cf473,
   "@/components/admin/OrderEmailActivity#OrderEmailActivity": OrderEmailActivity_dc48fdf40502d886d482d8b4403fc894,
+  "@/components/admin/OrdersAttention#OrdersAttentionBanner": OrdersAttentionBanner_990ba4227ab49bc0df57e66dc5573888,
+  "@/components/admin/OrdersAttention#OrdersAttentionPanel": OrdersAttentionPanel_990ba4227ab49bc0df57e66dc5573888,
   "@payloadcms/storage-vercel-blob/client#VercelBlobClientUploadHandler": VercelBlobClientUploadHandler_16c82c5e25f430251a3e3ba57219ff4e,
   "@payloadcms/next/rsc#CollectionCards": CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1
 }
