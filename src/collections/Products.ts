@@ -2,8 +2,8 @@ import type { CollectionConfig } from 'payload'
 
 import {
   ALLERGEN_EU_OPTIONS,
-  STOCK_STATUS,
   STOCK_STATUS_OPTIONS,
+  UNIT,
   UNIT_OPTIONS,
 } from '@/lib/contracts'
 import {
@@ -12,6 +12,21 @@ import {
 } from '@/lib/product-image-link'
 import { formatProductAdminLabel, resolveLocalizedString } from '@/lib/products/admin-label'
 import { revalidateStorefrontTags } from '@/lib/revalidate-storefront'
+
+/**
+ * A pack size on a kg-priced product is always a data-entry mistake, and an
+ * expensive one: `priceDkk` is the price of one kilogram there, so entering a
+ * 1500 g pack's price as if it were per-kg undercharges by a third. Fail loudly
+ * instead — the product should be `piece` with the pack price.
+ */
+function rejectContentOnKgProducts(value: unknown, options: unknown): true | string {
+  if (value == null) return true
+  const unit = (options as { siblingData?: { unit?: string } })?.siblingData?.unit
+  if (unit === UNIT.KG) {
+    return 'Leave this empty for kg-priced products: the price above is already per kg. For a fixed-weight pack, set Unit to "Piece" and enter the pack price.'
+  }
+  return true
+}
 
 export const Products: CollectionConfig = {
   slug: 'products',
@@ -148,13 +163,48 @@ export const Products: CollectionConfig = {
       },
     },
     {
+      name: 'netWeightGrams',
+      type: 'number',
+      min: 1,
+      admin: {
+        position: 'sidebar',
+        description:
+          'Net weight of one pack, in grams (e.g. 200). Only shows the customer a reference price per kg — the price above is still what is charged. Leave empty for kg-priced products and anything not sold by weight.',
+      },
+      validate: rejectContentOnKgProducts,
+    },
+    {
+      name: 'netVolumeMl',
+      type: 'number',
+      min: 1,
+      admin: {
+        position: 'sidebar',
+        description:
+          'Net volume of one pack, in millilitres (e.g. 1500 for 1.5 L). Shows a reference price per litre. Use this instead of net weight for drinks, oil and vinegar — for solids in brine, use the drained weight above.',
+      },
+      validate: (value: unknown, options: unknown) => {
+        const onKg = rejectContentOnKgProducts(value, options)
+        if (onKg !== true) return onKg
+        const sibling = (options as { siblingData?: { netWeightGrams?: number | null } })
+          ?.siblingData
+        if (value != null && sibling?.netWeightGrams != null) {
+          return 'Fill in either net weight or net volume, not both — a product is sold by one or the other.'
+        }
+        return true
+      },
+    },
+    {
+      // No default and not required: an empty status is the "not published"
+      // state, so a half-filled import row stays invisible instead of silently
+      // going on sale. Every storefront query filters on it (see PUBLISHED in
+      // src/lib/storefront.ts).
       name: 'stockStatus',
       type: 'select',
-      required: true,
-      defaultValue: STOCK_STATUS.IN,
       options: STOCK_STATUS_OPTIONS,
       admin: {
         position: 'sidebar',
+        description:
+          'Leave empty to hide the product from the storefront entirely — not listed, not searchable, cannot be ordered. Pick a value to publish it ("Epuizat" still shows, marked sold out).',
       },
     },
     {

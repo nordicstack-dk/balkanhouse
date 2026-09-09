@@ -39,6 +39,10 @@
     "ingredients": "Ingredienser",
     "allergens": "Allergener",
     "description": "Beskrivelse",
+    "netWeight": "Nettovægt",
+    "pricePerKgLabel": "pris pr. kg",
+    "netVolume": "Nettovolumen",
+    "pricePerLitreLabel": "pris pr. liter",
     "unit": "Enhed",
     "origin": "Oprindelsesland",
     "promo": "-{percent}%",
@@ -51,7 +55,8 @@
   },
   "unit": {
     "piece": "stk",
-    "kg": "kg"
+    "kg": "kg",
+    "litre": "l"
   },
   "cart": {
     "title": "Din kurv",

@@ -39,6 +39,10 @@
     "ingredients": "Ingrediente",
     "allergens": "Alergeni",
     "description": "Descriere",
+    "netWeight": "Gramaj",
+    "pricePerKgLabel": "preț pe kg",
+    "netVolume": "Volum net",
+    "pricePerLitreLabel": "preț pe litru",
     "unit": "Unitate",
     "origin": "Țara de origine",
     "promo": "-{percent}%",
@@ -51,7 +55,8 @@
   },
   "unit": {
     "piece": "bucată",
-    "kg": "kg"
+    "kg": "kg",
+    "litre": "l"
   },
   "cart": {
     "title": "Coșul tău",

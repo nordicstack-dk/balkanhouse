@@ -31,6 +31,11 @@ export function getPromotedProducts(promotions: Promotion[]): Product[] {
   for (const promo of promotions) {
     for (const item of promo.products ?? []) {
       if (typeof item === 'number') continue
+      // Products reach here through the promotion's nested relationship, so the
+      // PUBLISHED where-filter never applied. Without this check, linking a
+      // hidden product to a promotion would put it back on the home carousel
+      // and /shop/oferte.
+      if (item.stockStatus == null) continue
       if (seen.has(item.id)) continue
       seen.add(item.id)
       products.push(item)

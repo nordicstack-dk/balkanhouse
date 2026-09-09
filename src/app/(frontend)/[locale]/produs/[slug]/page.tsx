@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 
 import { AddToCartButton } from '@/components/products/AddToCartButton'
 import { AllergenList } from '@/components/products/AllergenList'
+import { UnitPriceLine, hasUnitPriceLine } from '@/components/products/UnitPriceLine'
 import { ProductCard } from '@/components/products/ProductCard'
 import { ProductCarousel } from '@/components/products/ProductCarousel'
 import { PromoBadge } from '@/components/products/PromoBadge'
@@ -91,16 +92,25 @@ export default async function ProductPage({ params }: Props) {
             </div>
           </div>
 
-          <div className="flex flex-wrap items-baseline gap-x-2.5">
-            {promoPercent != null && promoPercent > 0 && (
-              <span className="bh-nums text-lg text-text-muted/80 line-through decoration-danger/50">
-                {formatPriceDkk(product.priceDkk)}
+          <div className="space-y-1.5">
+            <div className="flex flex-wrap items-baseline gap-x-2.5">
+              {promoPercent != null && promoPercent > 0 && (
+                <span className="bh-nums text-lg text-text-muted/80 line-through decoration-danger/50">
+                  {formatPriceDkk(product.priceDkk)}
+                </span>
+              )}
+              <span className="bh-nums text-3xl font-bold tracking-tight text-burgundy md:text-4xl">
+                {formatPriceDkk(finalPrice)}
               </span>
-            )}
-            <span className="bh-nums text-3xl font-bold tracking-tight text-burgundy md:text-4xl">
-              {formatPriceDkk(finalPrice)}
-            </span>
-            <span className="text-sm text-text-muted">/ {tUnit(product.unit)}</span>
+              {!hasUnitPriceLine(product) && (
+                <span className="text-sm text-text-muted">/ {tUnit(product.unit)}</span>
+              )}
+            </div>
+            <UnitPriceLine
+              product={product}
+              priceDkk={finalPrice}
+              className="bh-nums block text-sm text-text-muted"
+            />
           </div>
 
           <AddToCartButton product={product} promoPercent={promoPercent} />

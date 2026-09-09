@@ -20,6 +20,23 @@ const REVALIDATE_SECONDS = 300
 
 export const SHOP_PAGE_SIZE = 24
 
+/**
+ * A product is published only once it has a stock status. An empty status is the
+ * "not ready to sell" state — the product is not listed, not searchable, not
+ * offered as a related product, and cannot be ordered (see create-order.ts).
+ *
+ * Every product query on the storefront must carry this. The one place it cannot
+ * be expressed as a `Where` is the promotions query, which populates products
+ * through a nested relationship — getPromotedProducts filters those in JS — and
+ * the raw SQL in search-db.ts, which has its own IS NOT NULL clause.
+ */
+export const PUBLISHED: Where = { stockStatus: { exists: true } }
+
+/** Narrow `where` for a product query, always AND-ed with the published filter. */
+function publishedWhere(...clauses: Where[]): Where {
+  return { and: [PUBLISHED, ...clauses] }
+}
+
 export async function getCategories(locale: Locale): Promise<Category[]> {
   return unstable_cache(
     async () => {
@@ -87,7 +104,9 @@ async function loadProductsByIds(
   const result = await payload.find({
     collection: 'products',
     locale,
-    where: { id: { in: ids } },
+    // Belt and braces: the ids already come from a published-only search, but
+    // this is the shared loader for every id-driven path.
+    where: publishedWhere({ id: { in: ids } }),
     depth: 1,
     limit: ids.length,
     pagination: false,
@@ -102,11 +121,9 @@ async function fetchProducts(options: {
   limit?: number
 }): Promise<ProductWithRelations[]> {
   const payload = await getPayloadClient()
-  const where: Where = {}
-
-  if (options.categoryId) {
-    where.category = { equals: options.categoryId }
-  }
+  const where = publishedWhere(
+    ...(options.categoryId ? [{ category: { equals: options.categoryId } }] : []),
+  )
 
   const result = await payload.find({
     collection: 'products',
@@ -185,11 +202,9 @@ async function fetchProductsPage(options: {
   page: number
 }): Promise<ProductListPage> {
   const payload = await getPayloadClient()
-  const where: Where = {}
-
-  if (options.categoryId) {
-    where.category = { equals: options.categoryId }
-  }
+  const where = publishedWhere(
+    ...(options.categoryId ? [{ category: { equals: options.categoryId } }] : []),
+  )
 
   const result = await payload.find({
     collection: 'products',
@@ -218,7 +233,9 @@ export async function getProductBySku(
       const result = await payload.find({
         collection: 'products',
         locale,
-        where: { sku: { equals: sku } },
+        // Unpublished -> null -> the page calls notFound(), so a guessed
+        // /produs/<SKU> URL 404s rather than leaking a hidden product.
+        where: publishedWhere({ sku: { equals: sku } }),
         limit: 1,
         depth: 1,
       })
@@ -248,13 +265,11 @@ export async function getRelatedProductsByKeyword(
       const result = await payload.find({
         collection: 'products',
         locale,
-        where: {
-          and: [
-            { keyword: { equals: normalized } },
-            { id: { not_equals: excludeProductId } },
-            { stockStatus: { not_equals: STOCK_STATUS.OUT } },
-          ],
-        },
+        where: publishedWhere(
+          { keyword: { equals: normalized } },
+          { id: { not_equals: excludeProductId } },
+          { stockStatus: { not_equals: STOCK_STATUS.OUT } },
+        ),
         limit,
         depth: 1,
         sort: 'title',

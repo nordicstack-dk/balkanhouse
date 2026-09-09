@@ -5,6 +5,7 @@ import type { Payload } from 'payload'
 import type { AllergenEU, StockStatus, Unit } from '@/lib/contracts'
 import { ALLERGEN_EU, STOCK_STATUS, UNIT } from '@/lib/contracts'
 import { resolveMediaIdForSku } from '@/lib/product-image-link'
+import { normalizeForSearch } from '@/lib/search'
 
 type Locale = 'ro' | 'da' | 'en'
 const LOCALES: Locale[] = ['ro', 'da', 'en']
@@ -14,7 +15,12 @@ interface ImportRow {
   title: Partial<Record<Locale, string>>
   priceDkk: number
   unit: Unit
-  stockStatus: StockStatus
+  /** Net weight of one pack in grams; undefined leaves any existing value alone. */
+  netWeightGrams?: number
+  /** Net volume of one pack in millilitres; mutually exclusive with the weight. */
+  netVolumeMl?: number
+  /** null = blank cell = hide the product from the storefront. */
+  stockStatus: StockStatus | null
   categorySlug?: string
   allergens: AllergenEU[]
   ingredients: Partial<Record<Locale, string>>
@@ -89,24 +95,121 @@ function parseUnit(value: string): Unit {
   throw new Error(`Invalid unit "${value}"`)
 }
 
-function parseAllergens(value: string): AllergenEU[] {
+/**
+ * Words meaning "this product has no allergens". Merchants write these instead
+ * of leaving the cell empty, and rejecting them aborted the whole import.
+ */
+const ALLERGEN_NONE = new Set([
+  'none',
+  'no',
+  'n/a',
+  'na',
+  '-',
+  '--',
+  '0',
+  'nu',
+  'niciunul',
+  'nici unul',
+  'fara',
+  'fara alergeni',
+  'ingen',
+])
+
+/**
+ * Accepted spellings per EU allergen code, keyed in diacritic-free lowercase
+ * (so "țelină" and "muștar" match after normalizeForSearch). Romanian and
+ * Danish names are included because that is what the merchant types.
+ *
+ * Deliberately conservative: ambiguous words are left OUT so the import fails
+ * loudly rather than guessing. "alune" is hazelnuts in most of Romania but
+ * peanuts in "alune de pamant", and "scoici" covers both molluscs and
+ * crustaceans — a wrong allergen is a safety problem, not a formatting one.
+ */
+const ALLERGEN_ALIASES: Record<string, AllergenEU> = {
+  gluten: ALLERGEN_EU.GLUTEN,
+
+  crustacee: ALLERGEN_EU.CRUSTACEANS,
+  krebsdyr: ALLERGEN_EU.CRUSTACEANS,
+
+  egg: ALLERGEN_EU.EGGS,
+  ou: ALLERGEN_EU.EGGS,
+  oua: ALLERGEN_EU.EGGS,
+  aeg: ALLERGEN_EU.EGGS,
+
+  peste: ALLERGEN_EU.FISH,
+  fisk: ALLERGEN_EU.FISH,
+
+  peanut: ALLERGEN_EU.PEANUTS,
+  arahide: ALLERGEN_EU.PEANUTS,
+  jordnodder: ALLERGEN_EU.PEANUTS,
+
+  soy: ALLERGEN_EU.SOYBEANS,
+  soybean: ALLERGEN_EU.SOYBEANS,
+  soia: ALLERGEN_EU.SOYBEANS,
+  soja: ALLERGEN_EU.SOYBEANS,
+  sojabonner: ALLERGEN_EU.SOYBEANS,
+
+  lapte: ALLERGEN_EU.MILK,
+  lactoza: ALLERGEN_EU.MILK,
+  laktose: ALLERGEN_EU.MILK,
+  maelk: ALLERGEN_EU.MILK,
+
+  nuci: ALLERGEN_EU.NUTS,
+  'fructe cu coaja': ALLERGEN_EU.NUTS,
+  nodder: ALLERGEN_EU.NUTS,
+
+  telina: ALLERGEN_EU.CELERY,
+  selleri: ALLERGEN_EU.CELERY,
+
+  mustar: ALLERGEN_EU.MUSTARD,
+  sennep: ALLERGEN_EU.MUSTARD,
+
+  susan: ALLERGEN_EU.SESAME,
+  sesam: ALLERGEN_EU.SESAME,
+
+  sulfites: ALLERGEN_EU.SULPHITES,
+  sulfiti: ALLERGEN_EU.SULPHITES,
+  sulfitter: ALLERGEN_EU.SULPHITES,
+  so2: ALLERGEN_EU.SULPHITES,
+  'dioxid de sulf': ALLERGEN_EU.SULPHITES,
+
+  lupine: ALLERGEN_EU.LUPIN,
+
+  mollusks: ALLERGEN_EU.MOLLUSCS,
+  moluste: ALLERGEN_EU.MOLLUSCS,
+  bloddyr: ALLERGEN_EU.MOLLUSCS,
+  muslinger: ALLERGEN_EU.MOLLUSCS,
+}
+
+export function parseAllergens(value: string): AllergenEU[] {
   if (!value.trim()) {
     return []
   }
 
-  const valid = new Set<string>(Object.values(ALLERGEN_EU))
+  const canonical = new Set<string>(Object.values(ALLERGEN_EU))
+  const result: AllergenEU[] = []
 
-  return value
-    .split(',')
-    .map((item) => item.trim().toLowerCase())
-    .filter(Boolean)
-    .map((item) => {
-      if (!valid.has(item)) {
-        throw new Error(`Invalid allergen "${item}"`)
-      }
+  for (const raw of value.split(',')) {
+    // Diacritic-insensitive, so "țelină" and "mælk" resolve like the rest of
+    // the storefront's text matching does.
+    const item = normalizeForSearch(raw).trim().replace(/\s+/g, ' ')
+    if (!item || ALLERGEN_NONE.has(item)) continue
 
-      return item as AllergenEU
-    })
+    // An EU code, its plural-trimmed form, or a known local name.
+    const resolved =
+      (canonical.has(item) ? (item as AllergenEU) : undefined) ??
+      ALLERGEN_ALIASES[item] ??
+      (canonical.has(`${item}s`) ? (`${item}s` as AllergenEU) : undefined)
+
+    if (!resolved) {
+      throw new Error(
+        `Invalid allergen "${raw.trim()}". Use an EU code (${Object.values(ALLERGEN_EU).join(', ')}), a known local name, or leave the cell empty.`,
+      )
+    }
+    if (!result.includes(resolved)) result.push(resolved)
+  }
+
+  return result
 }
 
 function toRichText(text: string) {
@@ -161,6 +264,19 @@ function parseLocalizedField(
 }
 
 function parseRow(row: Record<string, string>, lineNumber: number): ImportRow {
+  /**
+   * parseUnit / parseStockStatus / parseAllergens don't know their row, so
+   * their messages arrived without one — useless in a 600-row sheet, where the
+   * whole import aborts on the first bad cell.
+   */
+  const at = <T>(parse: () => T): T => {
+    try {
+      return parse()
+    } catch (err) {
+      throw new Error(`Row ${lineNumber}: ${err instanceof Error ? err.message : String(err)}`)
+    }
+  }
+
   const sku = getCell(row, 'sku')
   if (!sku) {
     throw new Error(`Row ${lineNumber}: missing sku`)
@@ -172,10 +288,50 @@ function parseRow(row: Record<string, string>, lineNumber: number): ImportRow {
     throw new Error(`Row ${lineNumber}: invalid price_dkk "${priceRaw}"`)
   }
 
-  const unit = parseUnit(getCell(row, 'unit') || UNIT.PIECE)
-  const stockStatus = parseStockStatus(getCell(row, 'stock_status') || STOCK_STATUS.IN)
+  const unit = at(() => parseUnit(getCell(row, 'unit') || UNIT.PIECE))
+
+  const positiveNumber = (raw: string, column: string): number | undefined => {
+    if (!raw) return undefined
+    const parsed = Number(String(raw).replace(',', '.'))
+    if (Number.isNaN(parsed) || parsed <= 0) {
+      throw new Error(`Row ${lineNumber}: invalid ${column} "${raw}"`)
+    }
+    return parsed
+  }
+
+  const netWeightGrams = positiveNumber(
+    getCell(row, 'net_weight_g', 'net_weight', 'weight_g', 'gramaj'),
+    'net_weight_g',
+  )
+  const netVolumeMl = positiveNumber(
+    getCell(row, 'net_volume_ml', 'net_volume', 'volume_ml', 'volum'),
+    'net_volume_ml',
+  )
+
+  // A product is sold by weight or by volume, never both — and a litre is not a
+  // kilogram, so the two cannot be reconciled after the fact.
+  if (netWeightGrams != null && netVolumeMl != null) {
+    throw new Error(
+      `Row ${lineNumber}: net_weight_g and net_volume_ml are both set — fill in only the one the product is sold by`,
+    )
+  }
+
+  // On a kg-priced product, price_dkk is already the price of one kilogram, so
+  // a pack size there means the price was almost certainly entered as a pack
+  // price. Left through, it undercharges on every sale.
+  if (unit === UNIT.KG && (netWeightGrams != null || netVolumeMl != null)) {
+    throw new Error(
+      `Row ${lineNumber}: unit is "kg", so price_dkk is already the price per kilogram — clear net_weight_g/net_volume_ml, or set unit to "piece" and enter the pack price`,
+    )
+  }
+
+  // A blank cell hides the product rather than defaulting it to "in stock":
+  // silently putting a half-filled row on sale is the worse failure, and it
+  // used to reset products the merchant had marked Epuizat in the admin.
+  const stockRaw = getCell(row, 'stock_status')
+  const stockStatus = stockRaw ? at(() => parseStockStatus(stockRaw)) : null
   const categorySlug = getCell(row, 'category_slug', 'category') || undefined
-  const allergens = parseAllergens(getCell(row, 'allergens'))
+  const allergens = at(() => parseAllergens(getCell(row, 'allergens')))
   const title = parseLocalizedField(row, 'title')
   const ingredients = parseLocalizedField(row, 'ingredients')
   const description = parseLocalizedField(row, 'description')
@@ -189,6 +345,7 @@ function parseRow(row: Record<string, string>, lineNumber: number): ImportRow {
     title,
     priceDkk,
     unit,
+    netWeightGrams,
     stockStatus,
     categorySlug,
     allergens,
@@ -361,7 +518,9 @@ export async function importProductsFromBuffer(
           sku: row.sku,
           title,
           priceDkk: row.priceDkk,
-          stockStatus: row.stockStatus,
+          // Spell out the blank case, so the merchant sees which rows the
+          // import would take off the storefront before committing.
+          stockStatus: row.stockStatus ?? 'ascuns (nu apare în magazin)',
           imageNote,
         }
       }),
@@ -412,6 +571,9 @@ export async function importProductsFromBuffer(
       stockStatus: row.stockStatus,
       allergens: row.allergens,
       countryOfOrigin: row.countryOfOrigin,
+      // Blank cells leave an existing value alone, matching keyword/category.
+      ...(row.netWeightGrams != null ? { netWeightGrams: row.netWeightGrams } : {}),
+      ...(row.netVolumeMl != null ? { netVolumeMl: row.netVolumeMl } : {}),
       ...(row.keyword ? { keyword: row.keyword } : {}),
       ...(category ? { category } : {}),
     }

@@ -17,8 +17,12 @@ const dot: Record<StockStatus, string> = {
   out: 'bg-danger',
 }
 
-export function StockBadge({ status }: { status: StockStatus }) {
+export function StockBadge({ status }: { status: StockStatus | null | undefined }) {
   const t = useTranslations('stock')
+
+  // No status = unpublished, which the storefront queries already filter out.
+  // Render nothing rather than an untranslated badge if one ever slips through.
+  if (!status) return null
 
   return (
     <span

@@ -57,7 +57,7 @@ export type CreateOrderResult =
  * The cart is only used for product identity and quantity; price, promotion,
  * unit and SKU are re-read at order time so expired promotions and tampered
  * localStorage values never reach an order. Returns null if any product no
- * longer exists or is out of stock.
+ * longer exists, is unpublished (empty stock status), or is out of stock.
  */
 async function buildVerifiedLineItems(items: CartItem[]) {
   const payload = await getPayloadClient()
@@ -77,7 +77,13 @@ async function buildVerifiedLineItems(items: CartItem[]) {
   const lineItems = []
   for (const item of items) {
     const product = productsById.get(item.productId)
-    if (!product || product.stockStatus === STOCK_STATUS.OUT) {
+    // A null stockStatus means unpublished. Carts live in localStorage, so a
+    // product hidden after it was added must not be orderable.
+    if (
+      !product ||
+      product.stockStatus == null ||
+      product.stockStatus === STOCK_STATUS.OUT
+    ) {
       return null
     }
 

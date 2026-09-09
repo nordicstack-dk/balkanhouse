@@ -39,6 +39,10 @@
     "ingredients": "Ingredients",
     "allergens": "Allergens",
     "description": "Description",
+    "netWeight": "Net weight",
+    "pricePerKgLabel": "price per kg",
+    "netVolume": "Net volume",
+    "pricePerLitreLabel": "price per litre",
     "unit": "Unit",
     "origin": "Country of origin",
     "promo": "-{percent}%",
@@ -51,7 +55,8 @@
   },
   "unit": {
     "piece": "piece",
-    "kg": "kg"
+    "kg": "kg",
+    "litre": "l"
   },
   "cart": {
     "title": "Your cart",

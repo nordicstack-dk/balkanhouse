@@ -83,7 +83,12 @@ export async function searchProductIds(
         ON req._parent_id = pr.id AND req._locale = ${localeParam}
       LEFT JOIN products_locales def
         ON def._parent_id = pr.id AND def._locale = ${defaultLocaleParam}
-      WHERE COALESCE(req.title, def.title) IS NOT NULL ${categoryFilter}
+      -- stock_status IS NULL is the "not published" state. This query bypasses
+      -- Payload's where-builder, so it needs its own copy of the PUBLISHED
+      -- filter from src/lib/storefront.ts.
+      WHERE COALESCE(req.title, def.title) IS NOT NULL
+        AND pr.stock_status IS NOT NULL
+        ${categoryFilter}
     ),
     matched AS (
       SELECT product_id,

@@ -8,6 +8,7 @@ import { getProductImageAlt, getProductImageUrl } from '@/lib/product-utils'
 import { WovenMark } from '@/components/ui/WovenMark'
 import { LinkPendingEdge } from '@/components/ui/LinkPending'
 
+import { UnitPriceLine, hasUnitPriceLine } from './UnitPriceLine'
 import { PromoBadge } from './PromoBadge'
 import { StockBadge } from './StockBadge'
 
@@ -21,6 +22,9 @@ export function ProductCard({ product, promoPercent }: ProductCardProps) {
   const imageUrl = getProductImageUrl(product)
   const finalPrice = applyPromo(product.priceDkk, promoPercent ?? null)
   const hasPromo = promoPercent != null && promoPercent > 0
+  // "200 g · 59,75 kr./kg" already names the unit, so the "/ bucată" suffix
+  // would only repeat it.
+  const showUnitSuffix = !hasUnitPriceLine(product)
 
   return (
     <article className="group rounded-core relative flex h-full flex-col overflow-hidden bg-paper shadow-soft ring-1 ring-line/60 transition-all duration-500 ease-glide hover:-translate-y-1 hover:shadow-lift hover:ring-gold/40">
@@ -63,6 +67,7 @@ export function ProductCard({ product, promoPercent }: ProductCardProps) {
             the cards whose numbers happened to be wide, so price rows stopped
             lining up across a grid row. */}
         <div className="mt-auto pt-1">
+          <UnitPriceLine product={product} priceDkk={finalPrice} />
           {hasPromo && (
             <span className="bh-nums block text-sm leading-tight text-text-muted/80 line-through decoration-danger/50">
               {formatPriceDkk(product.priceDkk)}
@@ -71,9 +76,11 @@ export function ProductCard({ product, promoPercent }: ProductCardProps) {
           <div className="flex items-end justify-between gap-2">
             <span className="bh-nums whitespace-nowrap text-[1.0625rem] font-bold tracking-tight text-burgundy">
               {formatPriceDkk(finalPrice)}
-              <span className="ml-1 text-xs font-normal tracking-normal text-text-muted">
-                / {t(product.unit)}
-              </span>
+              {showUnitSuffix && (
+                <span className="ml-1 text-xs font-normal tracking-normal text-text-muted">
+                  / {t(product.unit)}
+                </span>
+              )}
             </span>
             <StockBadge status={product.stockStatus} />
           </div>

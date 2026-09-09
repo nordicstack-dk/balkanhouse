@@ -245,7 +245,18 @@ export interface Product {
    * Whether the price is per piece or per kilogram.
    */
   unit: 'piece' | 'kg';
-  stockStatus: 'in' | 'low' | 'out';
+  /**
+   * Net weight of one pack, in grams (e.g. 200). Only shows the customer a reference price per kg — the price above is still what is charged. Leave empty for kg-priced products and anything not sold by weight.
+   */
+  netWeightGrams?: number | null;
+  /**
+   * Net volume of one pack, in millilitres (e.g. 1500 for 1.5 L). Shows a reference price per litre. Use this instead of net weight for drinks, oil and vinegar — for solids in brine, use the drained weight above.
+   */
+  netVolumeMl?: number | null;
+  /**
+   * Leave empty to hide the product from the storefront entirely — not listed, not searchable, cannot be ordered. Pick a value to publish it ("Epuizat" still shows, marked sold out).
+   */
+  stockStatus?: ('in' | 'low' | 'out') | null;
   category?: (number | null) | Category;
   /**
    * The first image is used as the main product photo.
@@ -660,6 +671,8 @@ export interface ProductsSelect<T extends boolean = true> {
   title?: T;
   priceDkk?: T;
   unit?: T;
+  netWeightGrams?: T;
+  netVolumeMl?: T;
   stockStatus?: T;
   category?: T;
   images?: T;
