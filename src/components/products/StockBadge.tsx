@@ -18,7 +18,17 @@ const dot: Partial<Record<StockStatus, string>> = {
   out: 'bg-danger',
 }
 
-export function StockBadge({ status }: { status: StockStatus | null | undefined }) {
+type StockBadgeProps = {
+  status: StockStatus | null | undefined
+  /**
+   * 'overlay' sits on the product photo, so it needs its own surface to stay
+   * legible over whatever the image happens to be. 'inline' is the bare
+   * dot-and-word used on the product page.
+   */
+  variant?: 'inline' | 'overlay'
+}
+
+export function StockBadge({ status, variant = 'inline' }: StockBadgeProps) {
   const t = useTranslations('stock')
 
   // Hidden or missing = unpublished, which the storefront queries already
@@ -30,6 +40,8 @@ export function StockBadge({ status }: { status: StockStatus | null | undefined 
       className={clsx(
         'inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap text-xs font-medium',
         text[status],
+        variant === 'overlay' &&
+          'rounded-full bg-paper/90 px-2.5 py-1 shadow-soft ring-1 ring-line/50 backdrop-blur-sm',
       )}
     >
       <span className={clsx('h-1.5 w-1.5 shrink-0 rounded-full', dot[status])} aria-hidden />

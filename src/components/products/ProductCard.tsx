@@ -8,6 +8,7 @@ import { getProductImageAlt, getProductImageUrl } from '@/lib/product-utils'
 import { WovenMark } from '@/components/ui/WovenMark'
 import { LinkPendingEdge } from '@/components/ui/LinkPending'
 
+import { AddToCartButton } from './AddToCartButton'
 import { UnitPriceLine, hasUnitPriceLine } from './UnitPriceLine'
 import { PromoBadge } from './PromoBadge'
 import { StockBadge } from './StockBadge'
@@ -48,6 +49,11 @@ export function ProductCard({ product, promoPercent }: ProductCardProps) {
               <PromoBadge percent={promoPercent} />
             </div>
           )}
+          {/* Mirrors the promo badge on the other corner, which frees the price
+              row below for the add-to-cart button. */}
+          <div className="absolute right-3 top-3">
+            <StockBadge status={product.stockStatus} variant="overlay" />
+          </div>
           {/* Separates pale product photos from the card surface. */}
           <div
             className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-text/8 to-transparent"
@@ -82,7 +88,7 @@ export function ProductCard({ product, promoPercent }: ProductCardProps) {
                 </span>
               )}
             </span>
-            <StockBadge status={product.stockStatus} />
+            <AddToCartButton product={product} promoPercent={promoPercent} variant="icon" />
           </div>
         </div>
       </div>
