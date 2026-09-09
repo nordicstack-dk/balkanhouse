@@ -9,10 +9,14 @@ export {
   ORDER_STATUS_OPTIONS,
   SHIPPING_METHOD,
   SHIPPING_METHOD_OPTIONS,
+  MEASURE_UNITS,
+  PUBLISHED_STOCK_STATUSES,
   STOCK_STATUS,
   STOCK_STATUS_OPTIONS,
   UNIT,
   UNIT_OPTIONS,
+  isMeasureUnit,
+  isPublishedStock,
 } from './enums'
 
 export type {

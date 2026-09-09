@@ -3,7 +3,7 @@ import path from 'path'
 import type { Payload } from 'payload'
 
 import type { AllergenEU, StockStatus, Unit } from '@/lib/contracts'
-import { ALLERGEN_EU, STOCK_STATUS, UNIT } from '@/lib/contracts'
+import { ALLERGEN_EU, STOCK_STATUS, UNIT, isMeasureUnit } from '@/lib/contracts'
 import { resolveMediaIdForSku } from '@/lib/product-image-link'
 import { normalizeForSearch } from '@/lib/search'
 
@@ -19,8 +19,8 @@ interface ImportRow {
   netWeightGrams?: number
   /** Net volume of one pack in millilitres; mutually exclusive with the weight. */
   netVolumeMl?: number
-  /** null = blank cell = hide the product from the storefront. */
-  stockStatus: StockStatus | null
+  /** A blank cell parses to 'hidden', so a half-filled row never goes on sale. */
+  stockStatus: StockStatus
   categorySlug?: string
   allergens: AllergenEU[]
   ingredients: Partial<Record<Locale, string>>
@@ -71,6 +71,10 @@ function parseStockStatus(value: string): StockStatus {
     'in stoc': STOCK_STATUS.IN,
     'stoc redus': STOCK_STATUS.LOW,
     epuizat: STOCK_STATUS.OUT,
+    hidden: STOCK_STATUS.HIDDEN,
+    ascuns: STOCK_STATUS.HIDDEN,
+    'ascunse': STOCK_STATUS.HIDDEN,
+    skjult: STOCK_STATUS.HIDDEN,
   }
 
   const status = aliases[normalized]
@@ -90,6 +94,10 @@ function parseUnit(value: string): Unit {
 
   if (normalized === UNIT.KG || normalized === 'kilogram') {
     return UNIT.KG
+  }
+
+  if (normalized === UNIT.LITRE || normalized === 'liter' || normalized === 'litru' || normalized === 'l') {
+    return UNIT.LITRE
   }
 
   throw new Error(`Invalid unit "${value}"`)
@@ -316,12 +324,12 @@ function parseRow(row: Record<string, string>, lineNumber: number): ImportRow {
     )
   }
 
-  // On a kg-priced product, price_dkk is already the price of one kilogram, so
-  // a pack size there means the price was almost certainly entered as a pack
-  // price. Left through, it undercharges on every sale.
-  if (unit === UNIT.KG && (netWeightGrams != null || netVolumeMl != null)) {
+  // On a per-measure product, price_dkk is already the price of one kilogram or
+  // litre, so a pack size there means the price was almost certainly entered as
+  // a pack price. Left through, it undercharges on every sale.
+  if (isMeasureUnit(unit) && (netWeightGrams != null || netVolumeMl != null)) {
     throw new Error(
-      `Row ${lineNumber}: unit is "kg", so price_dkk is already the price per kilogram — clear net_weight_g/net_volume_ml, or set unit to "piece" and enter the pack price`,
+      `Row ${lineNumber}: unit is "${unit}", so price_dkk is already the price per ${unit} — clear net_weight_g/net_volume_ml, or set unit to "piece" and enter the pack price`,
     )
   }
 
@@ -329,7 +337,7 @@ function parseRow(row: Record<string, string>, lineNumber: number): ImportRow {
   // silently putting a half-filled row on sale is the worse failure, and it
   // used to reset products the merchant had marked Epuizat in the admin.
   const stockRaw = getCell(row, 'stock_status')
-  const stockStatus = stockRaw ? at(() => parseStockStatus(stockRaw)) : null
+  const stockStatus = stockRaw ? at(() => parseStockStatus(stockRaw)) : STOCK_STATUS.HIDDEN
   const categorySlug = getCell(row, 'category_slug', 'category') || undefined
   const allergens = at(() => parseAllergens(getCell(row, 'allergens')))
   const title = parseLocalizedField(row, 'title')
@@ -520,7 +528,10 @@ export async function importProductsFromBuffer(
           priceDkk: row.priceDkk,
           // Spell out the blank case, so the merchant sees which rows the
           // import would take off the storefront before committing.
-          stockStatus: row.stockStatus ?? 'ascuns (nu apare în magazin)',
+          stockStatus:
+            row.stockStatus === STOCK_STATUS.HIDDEN
+              ? 'ascuns (nu apare în magazin)'
+              : row.stockStatus,
           imageNote,
         }
       }),

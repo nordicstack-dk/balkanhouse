@@ -1,6 +1,6 @@
 import { useTranslations } from 'next-intl'
 
-import { UNIT } from '@/lib/contracts'
+import { UNIT, isMeasureUnit } from '@/lib/contracts'
 import {
   formatNetVolume,
   formatNetWeight,
@@ -18,9 +18,9 @@ type ContentProduct = Pick<Product, 'unit' | 'netWeightGrams' | 'netVolumeMl'>
  * written before the validation existed.
  */
 function resolveContent(product: ContentProduct): 'weight' | 'volume' | null {
-  // A kg-priced product's headline price already *is* the per-kg price, so a
-  // second identical figure is noise.
-  if (product.unit === UNIT.KG) return null
+  // A kg- or litre-priced product's headline price already *is* the per-measure
+  // price, so a second identical figure is noise.
+  if (isMeasureUnit(product.unit)) return null
   if ((product.netWeightGrams ?? 0) > 0) return 'weight'
   if ((product.netVolumeMl ?? 0) > 0) return 'volume'
   return null

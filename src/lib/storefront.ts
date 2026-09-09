@@ -2,7 +2,7 @@ import { unstable_cache } from 'next/cache'
 import type { Where } from 'payload'
 
 import type { Locale } from '@/i18n/routing'
-import { STOCK_STATUS } from '@/lib/contracts'
+import { PUBLISHED_STOCK_STATUSES, STOCK_STATUS } from '@/lib/contracts'
 import type { About, Category, Contact, Faq, Media, Product, Promotion, Setting } from '@/payload-types'
 
 import { getPayloadClient } from './payload'
@@ -21,16 +21,17 @@ const REVALIDATE_SECONDS = 300
 export const SHOP_PAGE_SIZE = 24
 
 /**
- * A product is published only once it has a stock status. An empty status is the
- * "not ready to sell" state — the product is not listed, not searchable, not
- * offered as a related product, and cannot be ordered (see create-order.ts).
+ * A product is published only when its stock status is one of the selling ones.
+ * "Ascuns" — or an empty status on a row imported before that option existed —
+ * keeps it off the storefront entirely: not listed, not searchable, not offered
+ * as a related product, and not orderable (see create-order.ts).
  *
- * Every product query on the storefront must carry this. The one place it cannot
- * be expressed as a `Where` is the promotions query, which populates products
- * through a nested relationship — getPromotedProducts filters those in JS — and
- * the raw SQL in search-db.ts, which has its own IS NOT NULL clause.
+ * Every product query on the storefront must carry this. Two places cannot use
+ * a `Where`: the promotions query populates products through a nested
+ * relationship, so getPromotedProducts filters those in JS, and the raw SQL in
+ * search-db.ts has its own copy of the clause.
  */
-export const PUBLISHED: Where = { stockStatus: { exists: true } }
+export const PUBLISHED: Where = { stockStatus: { in: PUBLISHED_STOCK_STATUSES } }
 
 /** Narrow `where` for a product query, always AND-ed with the published filter. */
 function publishedWhere(...clauses: Where[]): Where {

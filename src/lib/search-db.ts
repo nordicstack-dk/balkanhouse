@@ -1,4 +1,5 @@
 import { routing } from '@/i18n/routing'
+import { PUBLISHED_STOCK_STATUSES } from '@/lib/contracts'
 
 import { getPayloadClient } from './payload'
 import { normalizeForSearch } from './search'
@@ -83,11 +84,11 @@ export async function searchProductIds(
         ON req._parent_id = pr.id AND req._locale = ${localeParam}
       LEFT JOIN products_locales def
         ON def._parent_id = pr.id AND def._locale = ${defaultLocaleParam}
-      -- stock_status IS NULL is the "not published" state. This query bypasses
-      -- Payload's where-builder, so it needs its own copy of the PUBLISHED
-      -- filter from src/lib/storefront.ts.
+      -- This query bypasses Payload's where-builder, so it needs its own copy
+      -- of the PUBLISHED filter from src/lib/storefront.ts: only the selling
+      -- statuses appear, so 'hidden' (and a NULL from an older import) is out.
       WHERE COALESCE(req.title, def.title) IS NOT NULL
-        AND pr.stock_status IS NOT NULL
+        AND pr.stock_status::text IN (${PUBLISHED_STOCK_STATUSES.map((s) => param(s)).join(', ')})
         ${categoryFilter}
     ),
     matched AS (

@@ -17,6 +17,7 @@ export type EmailMessages = {
     delivery: string
     unitPiece: string
     unitKg: string
+    unitLitre: string
     tableProduct: string
     tableQty: string
     tablePrice: string
@@ -72,6 +73,7 @@ const ro: EmailMessages = {
     delivery: 'Livrare la domiciliu',
     unitPiece: 'buc',
     unitKg: 'kg',
+    unitLitre: 'l',
     tableProduct: 'Produs',
     tableQty: 'Cant.',
     tablePrice: 'Preț',
@@ -127,6 +129,7 @@ const da: EmailMessages = {
     delivery: 'Levering til adressen',
     unitPiece: 'stk',
     unitKg: 'kg',
+    unitLitre: 'l',
     tableProduct: 'Produkt',
     tableQty: 'Antal',
     tablePrice: 'Pris',
@@ -182,6 +185,7 @@ const en: EmailMessages = {
     delivery: 'Home delivery',
     unitPiece: 'pcs',
     unitKg: 'kg',
+    unitLitre: 'l',
     tableProduct: 'Product',
     tableQty: 'Qty',
     tablePrice: 'Price',

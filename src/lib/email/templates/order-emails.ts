@@ -1,4 +1,4 @@
-import { SHIPPING_METHOD } from '@/lib/contracts'
+import { SHIPPING_METHOD, UNIT, type Unit } from '@/lib/contracts'
 import { computeOrderTotals } from '@/lib/orders/order-totals'
 import { formatPriceDkk } from '@/lib/pricing'
 import type { Order } from '@/payload-types'
@@ -60,8 +60,21 @@ function shippingBlock(order: Order, m: EmailMessages): string {
   `.trim()
 }
 
+/**
+ * A lookup rather than a ternary: the old `unit === 'kg' ? kg : piece` silently
+ * labelled any new unit as "piece", and TypeScript could not catch it because
+ * the ternary was exhaustive by construction. Record<Unit, …> now fails to
+ * compile if a unit is added without a label.
+ */
+const UNIT_LABEL_KEYS: Record<Unit, keyof EmailMessages['common']> = {
+  [UNIT.PIECE]: 'unitPiece',
+  [UNIT.KG]: 'unitKg',
+  [UNIT.LITRE]: 'unitLitre',
+}
+
 function unitLabel(unit: OrderLineItem['unit'], m: EmailMessages): string {
-  return unit === 'kg' ? m.common.unitKg : m.common.unitPiece
+  const key = UNIT_LABEL_KEYS[unit as Unit] ?? 'unitPiece'
+  return m.common[key]
 }
 
 function orderTotalDkk(order: Order): number {

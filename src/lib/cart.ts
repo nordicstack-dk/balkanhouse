@@ -1,3 +1,4 @@
+import type { Unit } from '@/lib/contracts'
 import { applyPromo } from '@/lib/pricing'
 
 export type CartItem = {
@@ -6,7 +7,8 @@ export type CartItem = {
   title: string
   quantity: number
   priceDkk: number
-  unit: 'piece' | 'kg'
+  /** Carts saved before a unit was added may hold a value no longer in the enum. */
+  unit: Unit
   promoPercent: number | null
   /** Snapshot of the product's primary image at add-to-cart time; optional for carts saved before this field existed. */
   imageUrl?: string | null

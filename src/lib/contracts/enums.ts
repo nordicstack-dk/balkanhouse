@@ -20,6 +20,8 @@ export const STOCK_STATUS = {
   IN: 'in',
   LOW: 'low',
   OUT: 'out',
+  /** Not published: the product exists in the admin but nowhere on the storefront. */
+  HIDDEN: 'hidden',
 } as const
 
 export type StockStatus = (typeof STOCK_STATUS)[keyof typeof STOCK_STATUS]
@@ -28,7 +30,26 @@ export const STOCK_STATUS_OPTIONS: { label: string; value: StockStatus }[] = [
   { label: 'În stoc', value: STOCK_STATUS.IN },
   { label: 'Stoc redus', value: STOCK_STATUS.LOW },
   { label: 'Epuizat', value: STOCK_STATUS.OUT },
+  { label: 'Ascuns — nu apare în magazin', value: STOCK_STATUS.HIDDEN },
 ]
+
+/**
+ * The statuses that put a product on the storefront. Anything else — 'hidden',
+ * or an empty status on a row imported before 'hidden' existed — keeps it off.
+ */
+export const PUBLISHED_STOCK_STATUSES: StockStatus[] = [
+  STOCK_STATUS.IN,
+  STOCK_STATUS.LOW,
+  STOCK_STATUS.OUT,
+]
+
+/**
+ * Single source of truth for "does this product appear in the shop". A type
+ * guard, so callers can index label maps with the narrowed status afterwards.
+ */
+export function isPublishedStock(status: string | null | undefined): status is StockStatus {
+  return status != null && (PUBLISHED_STOCK_STATUSES as string[]).includes(status)
+}
 
 export const ALLERGEN_EU = {
   GLUTEN: 'gluten',
@@ -69,6 +90,7 @@ export const ALLERGEN_EU_OPTIONS: { label: string; value: AllergenEU }[] = [
 export const UNIT = {
   PIECE: 'piece',
   KG: 'kg',
+  LITRE: 'litre',
 } as const
 
 export type Unit = (typeof UNIT)[keyof typeof UNIT]
@@ -76,7 +98,18 @@ export type Unit = (typeof UNIT)[keyof typeof UNIT]
 export const UNIT_OPTIONS: { label: string; value: Unit }[] = [
   { label: 'Piece', value: UNIT.PIECE },
   { label: 'Kg', value: UNIT.KG },
+  { label: 'Litre', value: UNIT.LITRE },
 ]
+
+/**
+ * Units whose price is already per measure rather than per pack, so `priceDkk`
+ * is the price of one kilogram / one litre and a pack size makes no sense.
+ */
+export const MEASURE_UNITS: Unit[] = [UNIT.KG, UNIT.LITRE]
+
+export function isMeasureUnit(unit: string | null | undefined): boolean {
+  return unit != null && (MEASURE_UNITS as string[]).includes(unit)
+}
 
 export const SHIPPING_METHOD = {
   PICKUP: 'pickup',

@@ -33,8 +33,8 @@ This document describes the expected Excel columns for bulk product import.
 | `title_da` | text | | Danish product title |
 | `title_en` | text | | English product title |
 | `price_dkk` | number | `49.95` | Price in Danish kroner |
-| `unit` | text | `piece` or `kg` | Selling unit |
-| `stock_status` | text | `in`, `low`, or `out` | Manual stock indicator (Romanian labels also accepted: `în stoc`, `stoc redus`, `epuizat`). **Leave empty to hide the product** — see [Hidden products](#hidden-products) |
+| `unit` | text | `piece`, `kg`, or `litre` | What the price covers. `piece` = one pack; `kg` / `litre` = the price is already per kilogram or litre. Aliases: `buc`, `bucată`, `kilogram`, `litru`, `l` |
+| `stock_status` | text | `in`, `low`, `out`, or `hidden` | Manual stock indicator. Romanian labels also accepted: `în stoc`, `stoc redus`, `epuizat`, `ascuns`. **A blank cell means `hidden`** — see [Hidden products](#hidden-products) |
 
 ## Optional columns
 
@@ -140,8 +140,9 @@ The error names the row as it is numbered in Excel, e.g.
 
 ```
 Row 4: Invalid allergen "alune". Use an EU code (gluten, crustaceans, …), a known local name, or leave the cell empty.
-Row 12: Invalid unit "litru"
+Row 12: Invalid unit "bucata mare"
 Row 88: invalid net_weight_g "abc"
+Row 91: unit is "kg", so price_dkk is already the price per kg — clear net_weight_g/net_volume_ml, or set unit to "piece" and enter the pack price
 ```
 
 Fix that row and run the import again. Use `--dry-run` (CLI) or read the Admin import preview to
@@ -154,11 +155,14 @@ catch these before writing anything.
 | `in` | In stock |
 | `low` | Low stock |
 | `out` | Out of stock — still listed, marked sold out |
-| *(empty)* | **Hidden** — the product does not appear in the shop at all |
+| `hidden` | **Hidden** — the product does not appear in the shop at all |
+| *(empty)* | Same as `hidden` |
 
 ### Hidden products
 
-A product with **no stock status** is treated as not published. It is:
+A product set to **`hidden`** — shown in the admin's Stock Status dropdown as
+**"Ascuns — nu apare în magazin"** — is not published. A blank `stock_status` cell in an import
+means the same thing. Such a product is:
 
 - not listed on `/shop` or in any category
 - not returned by search or filtering
@@ -168,7 +172,8 @@ A product with **no stock status** is treated as not published. It is:
 - not orderable — a stale cart containing it is rejected at checkout
 
 It stays fully visible and editable in the admin, so this is the state to use for a product that
-is not ready to sell yet. To publish it, give it a stock status.
+is not ready to sell yet. **New products default to `hidden`**, so nothing reaches the shop by
+accident. To publish one, pick any of the other three statuses.
 
 Two consequences for imports:
 
@@ -192,6 +197,11 @@ Fill in **exactly one** of the two, whichever the product is sold by:
 |--------|-------|---------|
 | `net_weight_g` | price per **kg** | jars, packs, cheese, meats, flour, sweets |
 | `net_volume_ml` | price per **litre** | water, juice, oil, vinegar, spirits |
+
+Both apply only to `unit = piece` products — a **pack** whose size you want the customer to be
+able to compare. If you sell something loose, by the kilogram or by the litre, set `unit` to `kg`
+or `litre` instead and leave both columns empty: `price_dkk` is then already the unit price, and
+the customer orders whole kilos or litres.
 
 ```
 200 g · 59,75 kr./kg      <- derived from 11,95 ÷ 0,2
@@ -224,10 +234,10 @@ Both the importer and the admin refuse these, because each one silently mis-pric
 
 | Combination | Why it is refused |
 |---|---|
-| `unit = kg` **plus** a pack size | `price_dkk` is already the price of one kilogram there. A pack size means the price was probably entered as a *pack* price — which undercharges on every sale. For a fixed-weight pack use `unit = piece` with the pack price. |
+| `unit = kg` or `unit = litre` **plus** a pack size | `price_dkk` is already the price of one kilogram / litre there. A pack size means the price was probably entered as a *pack* price — which undercharges on every sale. For a fixed-size pack use `unit = piece` with the pack price. |
 | `net_weight_g` **and** `net_volume_ml` together | A product is sold by one or the other, and the two cannot be converted. |
 
-Leave both columns empty for `unit = kg` products, and for anything not sold by weight or volume
+Leave both columns empty for `kg`- and `litre`-priced products, and for anything not sold by weight or volume
 (eggs, tea bags, food colouring). Empty simply means no reference line — nothing breaks.
 
 ## CLI usage

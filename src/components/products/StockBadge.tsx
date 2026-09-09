@@ -1,17 +1,18 @@
 import clsx from 'clsx'
 import { useTranslations } from 'next-intl'
 
-import type { StockStatus } from '@/lib/contracts'
+import { isPublishedStock, type StockStatus } from '@/lib/contracts'
 
 /* A dot plus a word, rather than a third coloured pill competing with the price
-   and the promo tag. */
-const text: Record<StockStatus, string> = {
+   and the promo tag. 'hidden' has no styling because it never reaches the
+   storefront — the queries filter it out. */
+const text: Partial<Record<StockStatus, string>> = {
   in: 'text-success',
   low: 'text-warning',
   out: 'text-danger',
 }
 
-const dot: Record<StockStatus, string> = {
+const dot: Partial<Record<StockStatus, string>> = {
   in: 'bg-success',
   low: 'bg-warning',
   out: 'bg-danger',
@@ -20,9 +21,9 @@ const dot: Record<StockStatus, string> = {
 export function StockBadge({ status }: { status: StockStatus | null | undefined }) {
   const t = useTranslations('stock')
 
-  // No status = unpublished, which the storefront queries already filter out.
-  // Render nothing rather than an untranslated badge if one ever slips through.
-  if (!status) return null
+  // Hidden or missing = unpublished, which the storefront queries already
+  // filter out. Render nothing rather than a stray badge if one slips through.
+  if (!isPublishedStock(status)) return null
 
   return (
     <span

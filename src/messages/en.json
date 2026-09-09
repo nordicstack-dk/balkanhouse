@@ -51,7 +51,8 @@
   "stock": {
     "in": "In stock",
     "low": "Low stock",
-    "out": "Out of stock"
+    "out": "Out of stock",
+    "hidden": "Hidden"
   },
   "unit": {
     "piece": "piece",

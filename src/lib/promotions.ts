@@ -1,3 +1,4 @@
+import { isPublishedStock } from '@/lib/contracts'
 import type { Product, Promotion } from '@/payload-types'
 
 /**
@@ -35,7 +36,7 @@ export function getPromotedProducts(promotions: Promotion[]): Product[] {
       // PUBLISHED where-filter never applied. Without this check, linking a
       // hidden product to a promotion would put it back on the home carousel
       // and /shop/oferte.
-      if (item.stockStatus == null) continue
+      if (!isPublishedStock(item.stockStatus)) continue
       if (seen.has(item.id)) continue
       seen.add(item.id)
       products.push(item)

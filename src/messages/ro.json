@@ -51,7 +51,8 @@
   "stock": {
     "in": "În stoc",
     "low": "Stoc redus",
-    "out": "Epuizat"
+    "out": "Epuizat",
+    "hidden": "Ascuns"
   },
   "unit": {
     "piece": "bucată",

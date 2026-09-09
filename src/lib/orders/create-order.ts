@@ -1,6 +1,12 @@
 import { after } from 'next/server'
 
-import { ORDER_STATUS, SHIPPING_METHOD, STOCK_STATUS, type ShippingMethod } from '@/lib/contracts'
+import {
+  ORDER_STATUS,
+  SHIPPING_METHOD,
+  STOCK_STATUS,
+  isPublishedStock,
+  type ShippingMethod,
+} from '@/lib/contracts'
 import type { CartItem } from '@/lib/cart'
 import { sendOrderReceived } from '@/lib/email/send-order-email'
 import { createLogger, maskEmail } from '@/lib/log'
@@ -77,11 +83,11 @@ async function buildVerifiedLineItems(items: CartItem[]) {
   const lineItems = []
   for (const item of items) {
     const product = productsById.get(item.productId)
-    // A null stockStatus means unpublished. Carts live in localStorage, so a
-    // product hidden after it was added must not be orderable.
+    // Carts live in localStorage, so a product hidden (or emptied of stock)
+    // after it was added must not be orderable.
     if (
       !product ||
-      product.stockStatus == null ||
+      !isPublishedStock(product.stockStatus) ||
       product.stockStatus === STOCK_STATUS.OUT
     ) {
       return null

@@ -242,9 +242,9 @@ export interface Product {
    */
   priceDkk: number;
   /**
-   * Whether the price is per piece or per kilogram.
+   * What the price covers. "Piece" = one pack (use the pack size fields below to show a reference price). "Kg" / "Litre" = the price is already per kilogram or per litre, and the customer orders whole kilos or litres.
    */
-  unit: 'piece' | 'kg';
+  unit: 'piece' | 'kg' | 'litre';
   /**
    * Net weight of one pack, in grams (e.g. 200). Only shows the customer a reference price per kg — the price above is still what is charged. Leave empty for kg-priced products and anything not sold by weight.
    */
@@ -254,9 +254,9 @@ export interface Product {
    */
   netVolumeMl?: number | null;
   /**
-   * Leave empty to hide the product from the storefront entirely — not listed, not searchable, cannot be ordered. Pick a value to publish it ("Epuizat" still shows, marked sold out).
+   * "Ascuns" keeps the product out of the shop entirely — not listed, not searchable, not orderable — while it stays editable here. The other three publish it ("Epuizat" still shows, marked sold out).
    */
-  stockStatus?: ('in' | 'low' | 'out') | null;
+  stockStatus?: ('in' | 'low' | 'out' | 'hidden') | null;
   category?: (number | null) | Category;
   /**
    * The first image is used as the main product photo.
@@ -379,7 +379,7 @@ export interface Order {
     product?: (number | null) | Product;
     sku: string;
     productName: string;
-    unit: 'piece' | 'kg';
+    unit: 'piece' | 'kg' | 'litre';
     unitPriceDkk: number;
     quantity: number;
     /**

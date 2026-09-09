@@ -51,7 +51,8 @@
   "stock": {
     "in": "På lager",
     "low": "Lavt lager",
-    "out": "Udsolgt"
+    "out": "Udsolgt",
+    "hidden": "Skjult"
   },
   "unit": {
     "piece": "stk",
