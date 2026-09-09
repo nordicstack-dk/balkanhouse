@@ -1,5 +1,5 @@
 import path from 'path'
-import { del, get, head, type ListBlobResultBlob } from '@vercel/blob'
+import { del, get, head, list, type ListBlobResultBlob } from '@vercel/blob'
 import type { Payload, PayloadRequest, RequestContext } from 'payload'
 
 import type { Media, Product } from '@/payload-types'
@@ -307,4 +307,72 @@ export async function resolveImagesForProductSku(
 
   const mediaId = await resolveMediaIdForSku(payload, sku.trim(), options)
   return mediaId == null ? null : [mediaId]
+}
+
+/**
+ * Bulk equivalent of resolveMediaIdForSku, for the product importer.
+ *
+ * Per SKU that has no picture — the common case — the single-row version costs
+ * four Media queries plus four Vercel Blob `head()` calls, one per candidate
+ * extension. Across a 600-row sheet that is ~4,900 round trips and dominated
+ * the import (~1.1-1.5s/row, against ~0.25s for the writes themselves).
+ *
+ * This loads every Media filename and every blob pathname once, then answers
+ * from memory. A miss costs nothing; a hit still does the real work of creating
+ * the Media record.
+ */
+export async function createSkuImageResolver(
+  payload: Payload,
+  options: { req?: Partial<PayloadRequest> } = {},
+): Promise<(skuOrBase: string, opts?: { alt?: string }) => Promise<number | null>> {
+  const mediaByFilename = new Map<string, number>()
+  let page = 1
+  for (;;) {
+    const result = await payload.find({ collection: 'media', limit: 500, page, depth: 0 })
+    for (const doc of result.docs) {
+      if (doc.filename) mediaByFilename.set(doc.filename, doc.id as number)
+    }
+    if (!result.hasNextPage) break
+    page += 1
+  }
+
+  const token = process.env.BLOB_READ_WRITE_TOKEN
+  const blobByFilename = new Map<string, { pathname: string; url: string }>()
+  if (token) {
+    let cursor: string | undefined
+    do {
+      const listed = await list({ token, limit: 1000, cursor })
+      for (const blob of listed.blobs) {
+        blobByFilename.set(path.basename(blob.pathname), {
+          pathname: blob.pathname,
+          url: blob.url,
+        })
+      }
+      cursor = listed.hasMore ? listed.cursor : undefined
+    } while (cursor)
+  }
+
+  return async (skuOrBase, opts = {}) => {
+    const candidates = candidateFilenamesForSku(skuOrBase)
+    if (candidates.length === 0) return null
+
+    for (const filename of candidates) {
+      const id = mediaByFilename.get(filename)
+      if (id != null) return id
+    }
+
+    if (!token) return null
+    const alt = opts.alt?.trim() || stemFromFilename(candidates[0])
+
+    for (const filename of candidates) {
+      const blob = blobByFilename.get(filename)
+      if (!blob || !isImageFilename(blob.pathname)) continue
+      const media = await createMediaFromBlob(payload, blob, token, { alt, req: options.req })
+      // Later rows sharing this filename reuse the record we just made.
+      mediaByFilename.set(filename, media.id as number)
+      return media.id as number
+    }
+
+    return null
+  }
 }

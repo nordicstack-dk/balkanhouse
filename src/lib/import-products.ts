@@ -4,8 +4,9 @@ import type { Payload } from 'payload'
 
 import type { AllergenEU, StockStatus, Unit } from '@/lib/contracts'
 import { ALLERGEN_EU, STOCK_STATUS, UNIT, isMeasureUnit } from '@/lib/contracts'
-import { resolveMediaIdForSku } from '@/lib/product-image-link'
+import { createSkuImageResolver } from '@/lib/product-image-link'
 import { normalizeForSearch } from '@/lib/search'
+import { revalidateStorefrontTags } from '@/lib/revalidate-storefront'
 
 type Locale = 'ro' | 'da' | 'en'
 const LOCALES: Locale[] = ['ro', 'da', 'en']
@@ -22,6 +23,8 @@ interface ImportRow {
   /** A blank cell parses to 'hidden', so a half-filled row never goes on sale. */
   stockStatus: StockStatus
   categorySlug?: string
+  /** Display name for a category the import has to create. */
+  categoryName: Partial<Record<Locale, string>>
   allergens: AllergenEU[]
   ingredients: Partial<Record<Locale, string>>
   description: Partial<Record<Locale, string>>
@@ -38,6 +41,10 @@ export type ImportProductsOptions = {
   dryRun?: boolean
   imagesDir?: string
   replaceImages?: boolean
+  /** First data row to write, 0-based. Rows before it are parsed but skipped. */
+  offset?: number
+  /** How many rows to write in this call. Omit to write the rest of the file. */
+  limit?: number
 }
 
 export type ImportProductsResult = {
@@ -46,7 +53,17 @@ export type ImportProductsResult = {
   updated: number
   imagesAttached: number
   imagesMissing: string[]
+  /** Category slugs that did not exist and were created by this import. */
+  categoriesCreated: string[]
   dryRun: boolean
+  /** Rows written by this call (a chunk, not the whole file). */
+  processed: number
+  /**
+   * Where the next chunk starts, or null when the file is done. A serverless
+   * function cannot write 600+ rows within its time limit, so the caller loops
+   * on this instead of holding one long request open.
+   */
+  nextOffset: number | null
   preview?: Array<{
     sku: string
     title: string
@@ -55,6 +72,16 @@ export type ImportProductsResult = {
     imageNote: string
   }>
 }
+
+/**
+ * Writes go through Payload one row at a time, and the Products beforeChange
+ * hook re-resolves images from Media + Vercel Blob on every save — ~2.6s each,
+ * against ~0.24s with it skipped. The importer has already resolved images
+ * itself by then, so this context flag turns that duplicate work off.
+ *
+ * revalidate is likewise pointless per row; the caller does it once at the end.
+ */
+const IMPORT_CONTEXT = { skipSkuImageAutoLink: true, skipStorefrontRevalidate: true } as const
 
 function normalizeHeader(header: string): string {
   return header.trim().toLowerCase().replace(/\s+/g, '_')
@@ -339,6 +366,7 @@ function parseRow(row: Record<string, string>, lineNumber: number): ImportRow {
   const stockRaw = getCell(row, 'stock_status')
   const stockStatus = stockRaw ? at(() => parseStockStatus(stockRaw)) : STOCK_STATUS.HIDDEN
   const categorySlug = getCell(row, 'category_slug', 'category') || undefined
+  const categoryName = parseLocalizedField(row, 'category_name')
   const allergens = at(() => parseAllergens(getCell(row, 'allergens')))
   const title = parseLocalizedField(row, 'title')
   const ingredients = parseLocalizedField(row, 'ingredients')
@@ -354,8 +382,10 @@ function parseRow(row: Record<string, string>, lineNumber: number): ImportRow {
     priceDkk,
     unit,
     netWeightGrams,
+    netVolumeMl,
     stockStatus,
     categorySlug,
+    categoryName,
     allergens,
     ingredients,
     description,
@@ -469,7 +499,7 @@ export async function readRowsFromBuffer(
   throw new Error(`Unsupported file type "${ext}". Use .xlsx or .csv`)
 }
 
-async function resolveCategoryId(payload: Payload, slug: string): Promise<number | undefined> {
+async function findCategoryId(payload: Payload, slug: string): Promise<number | undefined> {
   const result = await payload.find({
     collection: 'categories',
     locale: 'ro',
@@ -483,6 +513,51 @@ async function resolveCategoryId(payload: Payload, slug: string): Promise<number
 
   const id = result.docs[0]?.id
   return typeof id === 'number' ? id : undefined
+}
+
+/**
+ * "paine-si-produse-de-panificatie" -> "Paine si produse de panificatie".
+ *
+ * A slug cannot carry diacritics or capitalisation, so this is a placeholder
+ * the merchant renames in the admin. Give the sheet a `category_name` column to
+ * set a proper name at import time instead.
+ */
+function categoryNameFromSlug(slug: string): string {
+  const words = slug.replace(/[-_]+/g, ' ').trim()
+  return words.charAt(0).toUpperCase() + words.slice(1)
+}
+
+/**
+ * Creates the category if the slug is new, rather than silently dropping it.
+ * An unknown slug used to leave the product with no category at all and no
+ * warning — 170 rows of this catalogue landed that way.
+ *
+ * `name` and `slug` are both localized and required. Only Romanian is written
+ * unless the sheet supplies the others; the config has `fallback: true`, so the
+ * Danish and English storefronts show the Romanian name until it is translated.
+ */
+async function createCategory(
+  payload: Payload,
+  slug: string,
+  names: Partial<Record<Locale, string>>,
+): Promise<number> {
+  const doc = await payload.create({
+    collection: 'categories',
+    locale: 'ro',
+    data: { slug, name: names.ro || categoryNameFromSlug(slug) },
+  })
+
+  for (const locale of LOCALES) {
+    if (locale === 'ro' || !names[locale]) continue
+    await payload.update({
+      collection: 'categories',
+      id: doc.id,
+      locale,
+      data: { slug, name: names[locale]! },
+    })
+  }
+
+  return doc.id as number
 }
 
 /**
@@ -504,6 +579,30 @@ export async function importProductsFromBuffer(
   const rawRows = await readRowsFromBuffer(input.buffer, input.filename)
   const rows = rawRows.map((row, index) => parseRow(row, index + 2))
 
+  const rowsBySku = new Map<string, number[]>()
+  rows.forEach((row, index) => {
+    rowsBySku.set(row.sku, [...(rowsBySku.get(row.sku) ?? []), index + 2])
+  })
+  const duplicateSkus = [...rowsBySku.entries()]
+    .filter(([, at]) => at.length > 1)
+    .map(([sku, at]) => ({ sku, rows: at }))
+
+  // SKU is the product's identity and its URL, so two rows sharing one means
+  // the later silently replaces the earlier — losing a product outright when
+  // they are different goods that happen to share a barcode. Refuse the file
+  // rather than write a result the merchant cannot see is wrong.
+  if (duplicateSkus.length > 0) {
+    const shown = duplicateSkus
+      .slice(0, 10)
+      .map(({ sku, rows: at }) => `  ${sku} — rows ${at.join(', ')}`)
+      .join('\n')
+    const more =
+      duplicateSkus.length > 10 ? `\n  …and ${duplicateSkus.length - 10} more` : ''
+    throw new Error(
+      `${duplicateSkus.length} duplicate SKU(s) in the file. Each SKU must appear on one row only — otherwise the last row silently replaces the earlier product.\n${shown}${more}`,
+    )
+  }
+
   if (dryRun) {
     return {
       rowCount: rows.length,
@@ -511,7 +610,10 @@ export async function importProductsFromBuffer(
       updated: 0,
       imagesAttached: 0,
       imagesMissing: [],
+      categoriesCreated: [],
       dryRun: true,
+      processed: 0,
+      nextOffset: null,
       preview: rows.map((row) => {
         const title = row.title.ro ?? row.title.da ?? row.title.en ?? '(no title)'
         const base = row.image ?? row.sku
@@ -541,6 +643,7 @@ export async function importProductsFromBuffer(
   let created = 0
   let updated = 0
   let imagesAttached = 0
+  const categoriesCreated: string[] = []
   const imagesMissing: string[] = []
 
   async function imagesFieldFor(
@@ -562,7 +665,7 @@ export async function importProductsFromBuffer(
       }
     }
 
-    const mediaId = await resolveMediaIdForSku(payload, base, { alt })
+    const mediaId = await resolveSkuImage(base, { alt })
     if (mediaId != null) {
       imagesAttached += 1
       return [mediaId]
@@ -572,8 +675,55 @@ export async function importProductsFromBuffer(
     return undefined
   }
 
-  for (const row of rows) {
-    const category = row.categorySlug ? await resolveCategoryId(payload, row.categorySlug) : undefined
+  // Only this slice is written; the rest of the file is parsed (cheap, and it
+  // still validates every row up front) but left to the next call.
+  const offset = Math.max(0, Math.floor(options.offset ?? 0))
+  const limit = options.limit != null ? Math.max(1, Math.floor(options.limit)) : rows.length
+  const chunk = rows.slice(offset, offset + limit)
+  const nextOffset = offset + chunk.length < rows.length ? offset + chunk.length : null
+
+  // One query for every SKU in the chunk, instead of one per row.
+  const existingBySku = new Map<string, { id: number; images?: unknown }>()
+  if (chunk.length) {
+    const found = await payload.find({
+      collection: 'products',
+      where: { sku: { in: chunk.map((r) => r.sku) } },
+      limit: chunk.length,
+      pagination: false,
+      depth: 0,
+    })
+    for (const doc of found.docs) {
+      existingBySku.set(String(doc.sku), { id: doc.id as number, images: doc.images })
+    }
+  }
+
+  // A few distinct categories across hundreds of rows; look each up once.
+  // Media + blob indexes built once, so a SKU with no picture costs nothing
+  // instead of eight failed round trips.
+  const resolveSkuImage = await createSkuImageResolver(payload)
+
+  // A few distinct categories across hundreds of rows: look each up once, and
+  // create the ones that do not exist yet.
+  const categoryCache = new Map<string, number | undefined>()
+  const categoryIdFor = async (
+    slug: string,
+    names: Partial<Record<Locale, string>>,
+  ): Promise<number | undefined> => {
+    if (categoryCache.has(slug)) return categoryCache.get(slug)
+
+    let id = await findCategoryId(payload, slug)
+    if (id == null) {
+      id = await createCategory(payload, slug, names)
+      categoriesCreated.push(slug)
+    }
+    categoryCache.set(slug, id)
+    return id
+  }
+
+  for (const row of chunk) {
+    const category = row.categorySlug
+      ? await categoryIdFor(row.categorySlug, row.categoryName)
+      : undefined
 
     const baseData = {
       sku: row.sku,
@@ -589,19 +739,11 @@ export async function importProductsFromBuffer(
       ...(category ? { category } : {}),
     }
 
-    const existing = await payload.find({
-      collection: 'products',
-      where: {
-        sku: {
-          equals: row.sku,
-        },
-      },
-      limit: 1,
-    })
+    const existing = existingBySku.get(row.sku)
 
-    if (existing.docs.length > 0) {
-      const id = existing.docs[0].id
-      const images = await imagesFieldFor(row, existing.docs[0].images)
+    if (existing) {
+      const id = existing.id
+      const images = await imagesFieldFor(row, existing.images)
 
       await payload.update({
         collection: 'products',
@@ -612,6 +754,7 @@ export async function importProductsFromBuffer(
           ...(images ? { images } : {}),
         },
         locale: 'ro',
+        context: IMPORT_CONTEXT,
       })
 
       for (const locale of LOCALES) {
@@ -635,6 +778,7 @@ export async function importProductsFromBuffer(
             id,
             data: localizedData,
             locale,
+            context: IMPORT_CONTEXT,
           })
         }
       }
@@ -653,6 +797,7 @@ export async function importProductsFromBuffer(
           ...(images ? { images } : {}),
         },
         locale: 'ro',
+        context: IMPORT_CONTEXT,
       })
 
       for (const locale of LOCALES) {
@@ -680,12 +825,22 @@ export async function importProductsFromBuffer(
             id: createdDoc.id,
             data: localizedData,
             locale,
+            context: IMPORT_CONTEXT,
           })
         }
       }
 
+      // Defensive: duplicates are rejected up front, but if that ever changes a
+      // later row with the same SKU must update this record, not re-create it.
+      existingBySku.set(row.sku, { id: createdDoc.id as number, images: undefined })
       created += 1
     }
+  }
+
+  // Revalidated once here rather than on each write, and only when the file is
+  // finished, so the storefront doesn't churn between chunks.
+  if (nextOffset === null && chunk.length > 0) {
+    revalidateStorefrontTags('products', 'promotions')
   }
 
   return {
@@ -694,6 +849,9 @@ export async function importProductsFromBuffer(
     updated,
     imagesAttached,
     imagesMissing,
+    categoriesCreated,
+    processed: chunk.length,
+    nextOffset,
     dryRun: false,
   }
 }

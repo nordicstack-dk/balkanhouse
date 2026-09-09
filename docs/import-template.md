@@ -42,7 +42,8 @@ This document describes the expected Excel columns for bulk product import.
 |--------|------|---------|-------|
 | `net_weight_g` | number | `200` | Net weight of **one pack**, in grams. Shows a reference price per kg. Aliases: `net_weight`, `weight_g`, `gramaj` |
 | `net_volume_ml` | number | `1500` | Net volume of **one pack**, in millilitres. Shows a reference price per litre. Aliases: `net_volume`, `volume_ml`, `volum` |
-| `category_slug` | text | `conserve` | Matched against category slug (Romanian locale) |
+| `category_slug` | text | `conserve` | Matched against the category slug (Romanian locale). **A slug that does not exist yet is created automatically** |
+| `category_name` | text | `Conserve` | Display name to give a category the import has to create. Optional; without it the name is derived from the slug (`bauturi` → `Bauturi`) and you rename it in the admin. Locale suffixes work too: `category_name_da`, `category_name_en` |
 | `allergens` | text | `gluten,milk,nuts` | Comma-separated EU allergen codes |
 | `ingredients` | text | `roșii, sare` | Default locale (ro) ingredients |
 | `ingredients_ro` | text | | Romanian ingredients |
@@ -255,4 +256,4 @@ pnpm import:products -- path/to/products.xlsx --dry-run
 ## Notes
 
 - Existing products are matched by `sku` and updated; new SKUs are created.
-- Categories must exist in the admin before import if `category_slug` is used.
+- A `category_slug` that does not exist is created on the fly, so categories no longer have to be set up in the admin first. Give it a `category_name` if you want a proper display name straight away; otherwise rename it under Catalog → Categories.

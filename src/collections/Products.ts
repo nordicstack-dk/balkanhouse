@@ -47,7 +47,14 @@ export const Products: CollectionConfig = {
   },
   hooks: {
     // Promotions cache also embeds product docs (depth 2), so invalidate both.
-    afterChange: [() => revalidateStorefrontTags('products', 'promotions')],
+    // A bulk import sets skipStorefrontRevalidate and revalidates once at the
+    // end, rather than paying for it on every one of ~2400 writes.
+    afterChange: [
+      ({ req }) => {
+        if (req.context?.skipStorefrontRevalidate) return
+        revalidateStorefrontTags('products', 'promotions')
+      },
+    ],
     afterDelete: [() => revalidateStorefrontTags('products', 'promotions')],
     beforeChange: [
       async ({ data, originalDoc, req }) => {

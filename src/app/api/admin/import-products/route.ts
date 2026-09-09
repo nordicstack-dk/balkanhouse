@@ -8,6 +8,19 @@ import { getPayloadClient } from '@/lib/payload'
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024
 const ALLOWED_EXTENSIONS = new Set(['.xlsx', '.xls', '.csv'])
 
+/** Rows written per request when the caller doesn't say. */
+const DEFAULT_CHUNK = 80
+const MAX_CHUNK = 200
+
+/**
+ * Writing a whole catalogue in one request does not fit in a serverless
+ * function: at ~0.25s per row a 600-row file needs minutes, and the platform
+ * returns 504 partway through, leaving a half-applied import. The client posts
+ * the same file repeatedly with a moving offset instead; this ceiling is only a
+ * safety net for a slow chunk.
+ */
+export const maxDuration = 300
+
 export async function POST(request: Request) {
   try {
     const payload = await getPayloadClient()
@@ -20,6 +33,15 @@ export async function POST(request: Request) {
     const formData = await request.formData()
     const file = formData.get('file')
     const replaceImages = String(formData.get('replaceImages') ?? '') === 'true'
+    const dryRun = String(formData.get('dryRun') ?? '') === 'true'
+
+    const parsePositive = (value: FormDataEntryValue | null, fallback: number, max: number) => {
+      const n = Number(value)
+      if (!Number.isFinite(n) || n < 0) return fallback
+      return Math.min(Math.floor(n), max)
+    }
+    const offset = parsePositive(formData.get('offset'), 0, Number.MAX_SAFE_INTEGER)
+    const limit = parsePositive(formData.get('limit'), DEFAULT_CHUNK, MAX_CHUNK) || DEFAULT_CHUNK
 
     if (!(file instanceof File)) {
       return NextResponse.json({ error: 'Missing file upload' }, { status: 400 })
@@ -45,7 +67,7 @@ export async function POST(request: Request) {
     const summary = await importProductsFromBuffer(
       payload,
       { buffer, filename },
-      { replaceImages },
+      { replaceImages, dryRun, offset, limit },
     )
 
     return NextResponse.json(summary)

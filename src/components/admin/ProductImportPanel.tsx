@@ -9,13 +9,23 @@ type ImportSummary = {
   updated: number
   imagesAttached: number
   imagesMissing: string[]
+  categoriesCreated: string[]
 }
+
+/** What one chunk request returns on top of the running totals. */
+type ChunkResponse = ImportSummary & {
+  processed: number
+  nextOffset: number | null
+  error?: string
+}
+
+type Progress = { done: number; total: number }
 
 type ImportState =
   | { status: 'idle' }
-  | { status: 'loading' }
+  | { status: 'loading'; progress?: Progress }
   | { status: 'success'; summary: ImportSummary }
-  | { status: 'error'; message: string }
+  | { status: 'error'; message: string; progress?: Progress }
 
 const BURGUNDY = '#6b1d2a'
 
@@ -77,35 +87,65 @@ export function ProductImportPanel() {
 
     setState({ status: 'loading' })
 
+    // The file is posted once per chunk with a moving offset. A whole catalogue
+    // in a single request exceeds the serverless time limit and 504s partway
+    // through, which is how a previous run left 79 of 610 rows applied.
+    const totals: ImportSummary = {
+      rowCount: 0,
+      created: 0,
+      updated: 0,
+      imagesAttached: 0,
+      imagesMissing: [],
+      categoriesCreated: [],
+    }
+    let offset = 0
+
     try {
-      const body = new FormData()
-      body.append('file', file)
-      body.append('replaceImages', String(replaceImages))
+      for (;;) {
+        const body = new FormData()
+        body.append('file', file)
+        body.append('replaceImages', String(replaceImages))
+        body.append('offset', String(offset))
 
-      const response = await fetch('/api/admin/import-products', {
-        method: 'POST',
-        credentials: 'include',
-        body,
-      })
-
-      const data = (await response.json().catch(() => ({}))) as ImportSummary & {
-        error?: string
-      }
-
-      if (!response.ok) {
-        setState({
-          status: 'error',
-          message: data.error || `Import failed (${response.status})`,
+        const response = await fetch('/api/admin/import-products', {
+          method: 'POST',
+          credentials: 'include',
+          body,
         })
-        return
+
+        const data = (await response.json().catch(() => ({}))) as ChunkResponse
+
+        if (!response.ok) {
+          const where = offset > 0 ? ` after ${offset} of ${totals.rowCount} rows` : ''
+          setState({
+            status: 'error',
+            message: `${data.error || `Import failed (${response.status})`}${where}. Rows already written are saved — fix the problem and import the same file again to continue.`,
+            progress: totals.rowCount ? { done: offset, total: totals.rowCount } : undefined,
+          })
+          return
+        }
+
+        totals.rowCount = data.rowCount
+        totals.created += data.created
+        totals.updated += data.updated
+        totals.imagesAttached += data.imagesAttached
+        totals.imagesMissing.push(...(data.imagesMissing ?? []))
+        for (const slug of data.categoriesCreated ?? []) {
+          if (!totals.categoriesCreated.includes(slug)) totals.categoriesCreated.push(slug)
+        }
+
+        if (data.nextOffset == null) break
+        offset = data.nextOffset
+        setState({ status: 'loading', progress: { done: offset, total: data.rowCount } })
       }
 
-      setState({ status: 'success', summary: data })
+      setState({ status: 'success', summary: totals })
       router.refresh()
     } catch (error: unknown) {
       setState({
         status: 'error',
         message: error instanceof Error ? error.message : 'Import failed',
+        progress: totals.rowCount ? { done: offset, total: totals.rowCount } : undefined,
       })
     }
   }
@@ -140,11 +180,49 @@ export function ProductImportPanel() {
         </h3>
       </div>
 
-      <p style={{ ...mutedText, margin: '0 0 16px' }}>
+      <p style={{ ...mutedText, margin: '0 0 12px' }}>
         Upload a <code>.xlsx</code> or <code>.csv</code> built from the product import template.
         Leave the <code>image</code> column empty and each product is matched to a Media or Blob
         file named after its SKU.
       </p>
+
+      {/* Download → edit → upload is the usual bulk-edit loop, so the export
+          sits with the import rather than somewhere else in the admin. Its
+          columns are exactly the ones read back in. */}
+      <div style={{ ...mutedText, margin: '0 0 16px' }}>
+        {/* A real anchor, not next/link: this is a file download, and a
+            client-side navigation would try to render the .xlsx as a route. */}
+        <a
+          href="/api/admin/export-products"
+          download
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            color: BURGUNDY,
+            fontWeight: 600,
+            textDecoration: 'none',
+          }}
+        >
+          <svg
+            width="15"
+            height="15"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden
+          >
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <path d="M7 10l5 5 5-5" />
+            <path d="M12 15V3" />
+          </svg>
+          Download all products as Excel
+        </a>
+        <span> — edit it and upload it back here to apply the changes in bulk.</span>
+      </div>
 
       <input
         ref={inputRef}
@@ -327,6 +405,37 @@ export function ProductImportPanel() {
         </button>
       </div>
 
+      {state.status === 'loading' && state.progress && (
+        <div role="status" aria-live="polite" style={{ marginTop: '14px' }}>
+          <div
+            style={{
+              height: '6px',
+              borderRadius: '3px',
+              background: 'var(--theme-elevation-100, #eee)',
+              overflow: 'hidden',
+            }}
+          >
+            <div
+              style={{
+                height: '100%',
+                width: `${Math.round((state.progress.done / Math.max(1, state.progress.total)) * 100)}%`,
+                background: BURGUNDY,
+                transition: 'width 200ms ease-out',
+              }}
+            />
+          </div>
+          <div
+            style={{
+              marginTop: '6px',
+              fontSize: '0.8rem',
+              color: 'var(--theme-elevation-600, #666)',
+            }}
+          >
+            {state.progress.done} / {state.progress.total} rows — keep this tab open
+          </div>
+        </div>
+      )}
+
       {state.status === 'success' && (
         <div
           role="status"
@@ -343,6 +452,13 @@ export function ProductImportPanel() {
         >
           Imported {state.summary.rowCount} row(s) — created {state.summary.created}, updated{' '}
           {state.summary.updated}, images attached {state.summary.imagesAttached}.
+          {state.summary.categoriesCreated.length > 0 && (
+            <div style={{ marginTop: '6px' }}>
+              Created {state.summary.categoriesCreated.length} new categor
+              {state.summary.categoriesCreated.length === 1 ? 'y' : 'ies'}:{' '}
+              {state.summary.categoriesCreated.join(', ')} — rename them under Catalog → Categories.
+            </div>
+          )}
           {state.summary.imagesMissing.length > 0 && (
             <div style={{ marginTop: '6px', color: '#8a3b2b' }}>
               No image found for {state.summary.imagesMissing.length} SKU(s):{' '}
@@ -365,6 +481,8 @@ export function ProductImportPanel() {
             color: '#9b2335',
             fontSize: '0.85rem',
             lineHeight: 1.5,
+            // The duplicate-SKU error lists one offending row per line.
+            whiteSpace: 'pre-line',
           }}
         >
           {state.message}
